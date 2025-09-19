@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.py[co]
+*.egg-info/
+.eggs/
+.venv/
+venv/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+.DS_Store
+
+# Flask/instance and uploads
+instance/
+uploads/
+
+# Environment files
+.env
+*.env
+
+# Logs
+*.log
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS
+Thumbs.db
