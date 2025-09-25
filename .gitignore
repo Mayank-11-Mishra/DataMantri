@@ -1,33 +1,51 @@
-# Python
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Python virtualenv
+venv/
+.venv/
+
+# Python cache and artifacts
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
-*.py[co]
-*.egg-info/
-.eggs/
-.venv/
-venv/
-ENV/
 
-# IDE
-.vscode/
-.idea/
-.DS_Store
-
-# Flask/instance and uploads
-instance/
-uploads/
-
-# Environment files
+# Local env files
 .env
-*.env
+database/.env
 
-# Logs
-*.log
+# Local SQLite databases and instances
+instance/
+*.db
+*.sqlite
+*.sqlite3
 
-# Jupyter
-.ipynb_checkpoints/
-
-# OS
-Thumbs.db
+# Build outputs
+build/
+coverage/
+.coverage*
+*.cover
+*.lcov
