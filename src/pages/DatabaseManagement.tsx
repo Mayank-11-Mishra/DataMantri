@@ -17,7 +17,8 @@ import {
   Code,
   Link,
   HardDrive,
-  Zap
+  Zap,
+  Boxes
 } from 'lucide-react';
 
 // Import all database management section components
@@ -29,6 +30,8 @@ import IndexesRelationsSection from '@/components/database/IndexesRelationsSecti
 import UserPrivilegeSection from '@/components/database/UserPrivilegeSection';
 import PerformanceMonitoringSection from '@/components/database/PerformanceMonitoringSection';
 import VisualToolsSection from '@/components/database/VisualToolsSection';
+import DataSourceBuilder from '@/components/database/DataSourceBuilder';
+import DataMartBuilder from '@/components/database/DataMartBuilder';
 import { useAuth } from '@/contexts/AuthContext';
 
 const DatabaseManagement: React.FC = () => {
@@ -45,15 +48,22 @@ const DatabaseManagement: React.FC = () => {
     databases: 8
   });
 
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = user?.is_admin;
 
   const tabs = [
     {
       id: 'databases',
-      label: 'Database Management',
+      label: 'DataSources',
       icon: Database,
-      description: 'Create, manage, and maintain databases',
-      component: DatabaseManagementSection
+      description: 'Connect with new data sources, see schemas, and more',
+      component: DataSourceBuilder
+    },
+    {
+      id: 'datamart',
+      label: 'DataMart',
+      icon: Boxes,
+      description: 'Create and manage data marts',
+      component: DataMartBuilder
     },
     {
       id: 'tables',
@@ -63,33 +73,11 @@ const DatabaseManagement: React.FC = () => {
       component: TableManagementSection
     },
     {
-      id: 'data',
-      label: 'Data Management',
-      icon: Edit3,
-      description: 'Insert, edit, and manage table data',
-      component: DataManagementSection
-    },
-    {
       id: 'sql',
       label: 'SQL Execution',
       icon: Code,
       description: 'Execute queries and manage SQL scripts',
       component: SQLExecutionSection
-    },
-    {
-      id: 'indexes',
-      label: 'Indexes & Relations',
-      icon: Link,
-      description: 'Manage indexes and foreign key relationships',
-      component: IndexesRelationsSection
-    },
-    {
-      id: 'users',
-      label: 'User & Privileges',
-      icon: Users,
-      description: 'Manage database users and permissions',
-      component: UserPrivilegeSection,
-      adminOnly: true
     },
     {
       id: 'performance',
@@ -140,7 +128,7 @@ const DatabaseManagement: React.FC = () => {
     }
   };
 
-  const filteredTabs = tabs.filter(tab => !tab.adminOnly || isAdmin);
+  const filteredTabs = tabs;
 
   return (
     <div className="space-y-6">

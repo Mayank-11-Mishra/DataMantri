@@ -62,7 +62,7 @@ const UploadUtility: React.FC = () => {
     upload_mode: 'truncate_load'
   });
 
-  const isAdmin = user?.is_admin || false;
+  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
 
   useEffect(() => {
     fetchTemplates();

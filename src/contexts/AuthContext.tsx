@@ -1,10 +1,13 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
+type UserRole = 'super_admin' | 'admin' | 'editor' | 'viewer';
+
 interface User {
-  id: number;
+  id: string;
   email: string;
-  is_admin: boolean;
-  roles: string[];
+  role: UserRole;
+  organization_name?: string;
+  organization_logo_url?: string;
   must_reset_password?: boolean;
 }
 
@@ -44,7 +47,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const login = async (email: string, password: string): Promise<{ success: boolean; mustResetPassword?: boolean }> => {
     setIsLoading(true);
     try {
-      const response = await fetch('/login', {
+      const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

@@ -57,46 +57,61 @@ def inject_now():
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# Routes
-@app.route('/')
-def index():
-    return redirect(url_for('login'))
+# Catch-all route to serve the React frontend
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def serve(path):
+    if path != "" and os.path.exists(os.path.join(app.static_folder, path)):
+        return send_from_directory(app.static_folder, path)
+    else:
+        return send_from_directory(app.static_folder, 'index.html')
 
-@app.route('/dashboard')
-@login_required
-def dashboard():
-    return render_template('dashboard.html')
-
-@app.route('/ai-dashboard')
-@login_required
-def ai_dashboard():
-    return render_template('ai_dashboard.html')
-
-@app.route('/data-sources')
-@login_required
-def data_sources():
-    return render_template('data_sources.html')
-
-@app.route('/login', methods=['GET', 'POST'])
+@app.route('/login', methods=['POST'])
 def login():
-    if request.method == 'POST':
-        email = request.form.get('email')
-        password = request.form.get('password')
+    app.logger.info('Login attempt started.')
+    try:
+        data = request.get_json()
+        if not data:
+            app.logger.error('Login failed: No JSON data received.')
+            return jsonify({'status': 'error', 'message': 'Invalid request.'}), 400
+
+        email = data.get('email')
+        password = data.get('password')
+        app.logger.info(f'Login attempt for email: {email}')
+
         user = User.query.filter_by(email=email).first()
-        
+        app.logger.info(f'User query result: {user}')
+
         if user and check_password_hash(user.password, password):
             login_user(user)
-            return redirect(url_for('dashboard'))
+            app.logger.info('Login successful.')
+            return jsonify({'status': 'success', 'message': 'Login successful.'})
         else:
-            flash('Invalid email or password')
-    
-    return render_template('login.html')
+            app.logger.warning(f'Login failed for email: {email}. Invalid credentials.')
+            return jsonify({'status': 'error', 'message': 'Invalid email or password.'}), 401
 
-@app.route('/logout')
+    except Exception as e:
+        app.logger.error(f'An unexpected error occurred during login: {e}', exc_info=True)
+        return jsonify({'status': 'error', 'message': 'An internal server error occurred.'}), 500
+
+@app.route('/logout', methods=['POST'])
 @login_required
 def logout():
     logout_user()
-    return redirect(url_for('login'))
+    return jsonify({'status': 'success', 'message': 'Logout successful.'})
+
+@app.route('/api/session', methods=['GET'])
+@login_required
+def get_session():
+    role = 'super_admin' if current_user.is_admin else 'viewer'
+    return jsonify({
+        'status': 'success',
+        'user': {
+            'id': current_user.id,
+            'email': current_user.email,
+            'role': role
+        }
+    })
 
 @app.route('/api/data-sources', methods=['GET', 'POST'])
 @login_required

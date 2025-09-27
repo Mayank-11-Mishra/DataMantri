@@ -492,16 +492,7 @@ const QueryEditor = ({ onCancel }: { onCancel: () => void }) => {
           <label className="block text-sm font-medium text-gray-700 mb-2">SQL Query</label>
           <textarea
             className="w-full h-64 p-3 border border-gray-300 rounded-md font-mono text-sm"
-            placeholder="Enter your SQL query here...
-Example:
-SELECT 
-  customer_id,
-  SUM(order_amount) as total_spent,
-  COUNT(*) as order_count
-FROM orders 
-WHERE order_date >= '2024-01-01'
-GROUP BY customer_id
-ORDER BY total_spent DESC"
+            placeholder="Enter your SQL query here...\nExample:\nSELECT \n  customer_id,\n  SUM(order_amount) as total_spent,\n  COUNT(*) as order_count\nFROM orders \nWHERE order_date >= '2024-01-01'\nGROUP BY customer_id\nORDER BY total_spent DESC"
             value={sqlQuery}
             onChange={(e) => setSqlQuery(e.target.value)}
           />
@@ -573,7 +564,7 @@ ORDER BY total_spent DESC"
   );
 };
 
-const DataMarts = () => {
+const DataMartBuilder: React.FC<{ connectionStatus?: string }> = ({ connectionStatus }) => {
   const { toast } = useToast();
   const [view, setView] = useState<'list' | 'select' | 'ui-builder' | 'query-editor'>('list');
     const [dataMarts, setDataMarts] = useState<any[]>([]);
@@ -692,4 +683,4 @@ const DataMarts = () => {
   return <div className="p-6">{renderContent()}</div>;
 };
 
-export default DataMarts;
+export default DataMartBuilder;

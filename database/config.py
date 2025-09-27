@@ -30,7 +30,7 @@ class DatabaseConfig:
         self.db_type = os.getenv('DB_TYPE', 'postgresql')
         self.host = os.getenv('DB_HOST', 'localhost')
         self.port = int(os.getenv('DB_PORT', 5432))
-        self.username = os.getenv('DB_USER', 'postgres')
+        self.username = os.getenv('DB_USERNAME', 'sunny.agarwal')
         self.password = os.getenv('DB_PASSWORD', 'postgres')
         self.database = os.getenv('DB_NAME', 'dataviz')
         self.schema = os.getenv('DB_SCHEMA', 'public')

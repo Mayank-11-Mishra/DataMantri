@@ -34,16 +34,14 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
   const navigationItems = [
-  { title: "Dashboard", url: "/dashboard", icon: Home },
-  { title: "Dashboard Analytics", url: "/dashboard-analytics", icon: BarChart, adminOnly: true },
-  { title: "Upload Utility", url: "/upload-utility", icon: Upload },
-  { title: "Data Sources Builder", url: "/data-sources", icon: Database },
-  { title: "Data Mart Builder", url: "/data-marts", icon: Boxes },
+  { title: "Analytics", url: "/analytics", icon: BarChart, adminOnly: true },
+  { title: "Data Management Suite", url: "/database-management", icon: Server, adminOnly: true },
+  { title: "Dashboards", url: "/dashboard", icon: Home },
   { title: "Dashboard Builder", url: "/dashboard-builder", icon: LayoutDashboard },
-  { title: "Database Management Suite", url: "/database-management", icon: Server, adminOnly: true },
-  { title: "Access Management", url: "/access-management", icon: Shield, adminOnly: true },
+  { title: "Theme & Chart Builder", url: "/theme-library", icon: Palette },
   { title: "Scheduler", url: "/scheduler", icon: Calendar },
-  { title: "Theme & Chart Libraries", url: "/theme-library", icon: Palette },
+  { title: "Access Management", url: "/access-management", icon: Shield, adminOnly: true },
+  { title: "Upload Utility", url: "/upload-utility", icon: Upload },
 ];
 
 export function AppSidebar() {
@@ -68,9 +66,16 @@ export function AppSidebar() {
         {/* Logo Section */}
         <div className="p-4 border-b border-sidebar-border">
           <div className="flex items-center space-x-2">
-            <BarChart3 className="h-6 w-6 text-sidebar-primary" />
+            {user?.organization_logo_url ? (
+              <img src={user.organization_logo_url} alt={`${user.organization_name} Logo`} className="h-8 w-8 object-contain" />
+            ) : (
+              <BarChart3 className="h-6 w-6 text-sidebar-primary" />
+            )}
             {!isCollapsed && (
-              <span className="font-bold text-sidebar-foreground">DataMantri</span>
+              <div className="flex flex-col">
+                <span className="font-bold text-sidebar-foreground">{user?.organization_name || 'DataMantri'}</span>
+                {user?.organization_name && <span className="text-xs text-muted-foreground">Powered by DataMantri</span>}
+              </div>
             )}
           </div>
         </div>
@@ -80,7 +85,7 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
                             {navigationItems
-                .filter(item => !item.adminOnly || (user?.is_admin))
+                .filter(item => !item.adminOnly || (user?.role === 'admin' || user?.role === 'super_admin'))
                 .map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>

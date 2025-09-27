@@ -12,9 +12,8 @@ import DashboardAnalytics from "./pages/DashboardAnalytics";
 import DashboardBuilder from "./pages/DashboardBuilder";
 import UploadUtility from "./pages/UploadUtility";
 import Upload from "./pages/Upload";
-import DataSources from "./pages/DataSources";
-import DataMarts from "./pages/DataMarts";
-import AccessManagement from "./pages/AccessManagement";
+import AccessManagement from './pages/AccessManagement';
+import Analytics from './pages/Analytics';
 import ThemeLibrary from "./pages/ThemeLibrary";
 import ThemeBuilder from "./pages/ThemeBuilder";
 import ChartBuilder from "./pages/ChartBuilder";
@@ -32,7 +31,6 @@ const App = () => (
     <AuthProvider>
       <TooltipProvider>
         <Toaster />
-        <Sonner />
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<Login />} />
@@ -48,15 +46,14 @@ const App = () => (
               <Route path="/dashboard-builder" element={<DashboardBuilder />} />
               <Route path="/upload-utility" element={<UploadUtility />} />
               <Route path="/upload" element={<Upload />} />
-              <Route path="/data-sources" element={<DataSources />} />
-              <Route path="/data-marts" element={<DataMarts />} />
-              <Route path="/access-management" element={<AccessManagement />} />
               <Route path="/theme-library" element={<ThemeLibrary />} />
               <Route path="/themes" element={<ThemeBuilder />} />
               <Route path="/chart-builder" element={<ChartBuilder />} />
               <Route path="/scheduler" element={<Scheduler />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/database-management" element={<DatabaseManagement />} />
+              <Route path="/access-management" element={<ProtectedRoute adminOnly><AccessManagement /></ProtectedRoute>} />
+              <Route path="/analytics" element={<ProtectedRoute adminOnly><Analytics /></ProtectedRoute>} />
               <Route path="/dashboard/:id" element={<DashboardViewer />} />
             </Route>
             <Route path="*" element={<NotFound />} />

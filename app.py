@@ -46,6 +46,31 @@ login_manager.init_app(app)
 def unauthorized():
     return jsonify({'status': 'error', 'message': 'Authentication required'}), 401
 
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(user_id)
+
+@app.route('/api/auth/login', methods=['POST'])
+def api_login():
+    data = request.get_json()
+    email = data.get('email')
+    password = data.get('password')
+    
+    if not email or not password:
+        return jsonify({'status': 'error', 'message': 'Email and password required'}), 400
+    
+    user = User.query.filter_by(email=email).first()
+    if user and user.is_active and check_password_hash(user.password_hash, password):
+        login_user(user, remember=True)
+        user.last_login_at = datetime.utcnow()
+        db.session.commit()
+        return jsonify({
+            'status': 'success',
+            'message': 'Login successful',
+            'must_reset_password': user.must_reset_password
+        })
+    return jsonify({'status': 'error', 'message': 'Invalid credentials'}), 401
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
