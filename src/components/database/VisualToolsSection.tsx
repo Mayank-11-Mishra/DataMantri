@@ -72,8 +72,22 @@ const VisualToolsSection: React.FC<VisualToolsSectionProps> = ({ connectionStatu
 
   const fetchDatabases = async () => {
     try {
-      setDatabases(['dataviz_main', 'analytics_db', 'user_sessions']);
+      const response = await fetch('/api/data-sources', { 
+        credentials: 'include',
+        cache: 'no-store'
+      });
+      
+      if (response.ok) {
+        const dataSources = await response.json();
+        const databaseNames = Array.isArray(dataSources) 
+          ? dataSources.map((ds: any) => ds.name)
+          : [];
+        setDatabases(databaseNames);
+      } else {
+        throw new Error('Failed to fetch data sources');
+      }
     } catch (error) {
+      console.error('Error fetching databases:', error);
       toast({
         title: 'Error',
         description: 'Failed to fetch databases',

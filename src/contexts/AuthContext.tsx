@@ -1,11 +1,12 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-type UserRole = 'super_admin' | 'admin' | 'editor' | 'viewer';
+type UserRole = 'SUPER_ADMIN' | 'ADMIN' | 'EDITOR' | 'VIEWER';
 
 interface User {
   id: string;
   email: string;
   role: UserRole;
+  is_admin?: boolean;
   organization_name?: string;
   organization_logo_url?: string;
   must_reset_password?: boolean;

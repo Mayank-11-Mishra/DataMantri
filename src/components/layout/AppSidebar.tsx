@@ -85,7 +85,7 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
                             {navigationItems
-                .filter(item => !item.adminOnly || (user?.role === 'admin' || user?.role === 'super_admin'))
+                .filter(item => !item.adminOnly || (user?.is_admin === true))
                 .map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>

@@ -10,22 +10,22 @@ export default defineConfig(({ mode }) => ({
     port: 8080,
     proxy: {
       '/api': {
-        target: 'http://127.0.0.1:5000',
+        target: 'http://localhost:8091',
         changeOrigin: true,
         secure: false,
       },
       '/login': {
-        target: 'http://127.0.0.1:5000',
+        target: 'http://127.0.0.1:8091',
         changeOrigin: true,
         secure: false,
       },
       '/logout': {
-        target: 'http://127.0.0.1:5000',
+        target: 'http://127.0.0.1:8091',
         changeOrigin: true,
         secure: false,
       },
       '/register': {
-        target: 'http://127.0.0.1:5000',
+        target: 'http://127.0.0.1:8091',
         changeOrigin: true,
         secure: false,
       }

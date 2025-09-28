@@ -7,6 +7,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy import create_engine, text, inspect
 from sqlalchemy.engine import URL
 import os
+import uuid
 from dotenv import load_dotenv
 import logging
 from datetime import datetime
@@ -81,36 +82,77 @@ CACHE_DURATION = 300  # 5 minutes
 
 # User model
 class User(UserMixin, db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(100), unique=True, nullable=False)
-    password = db.Column(db.String(256), nullable=False)
-    is_admin = db.Column(db.Boolean, default=False)
-    must_reset_password = db.Column(db.Boolean, default=False)
-    dashboards = db.relationship('Dashboard', backref='owner', lazy=True)
+    __tablename__ = 'users'
+    id = db.Column(db.String(36), primary_key=True)  # UUID as string
+    email = db.Column(db.String(255), unique=True, nullable=False)
+    password_hash = db.Column(db.String(255), nullable=False)
+    first_name = db.Column(db.String(100))
+    last_name = db.Column(db.String(100))
+    avatar_url = db.Column(db.String(500))
+    timezone = db.Column(db.String(50), default='UTC')
+    is_active = db.Column(db.Boolean, default=True)
+    email_verified = db.Column(db.Boolean, default=False)
+    last_login_at = db.Column(db.DateTime)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    role = db.Column(db.String(20), nullable=False, default='VIEWER')
+    organization_id = db.Column(db.String(36))
+    # Relationship to roles via association table
     roles = db.relationship(
-        'Role', 
-        secondary='user_roles', 
-        primaryjoin='User.id == UserRole.user_id',
-        secondaryjoin='Role.id == UserRole.role_id',
+        'Role',
+        secondary='user_roles',
+        primaryjoin="User.id==UserRole.user_id",
+        secondaryjoin="Role.id==UserRole.role_id",
         back_populates='users'
     )
+    
+    # Compatibility property for is_admin based on role
+    @property
+    def is_admin(self):
+        return self.role == 'ADMIN'
+    
+    @is_admin.setter
+    def is_admin(self, value):
+        if value:
+            self.role = 'ADMIN'
+        else:
+            self.role = 'VIEWER'
+    
+    # Compatibility property for must_reset_password
+    @property
+    def must_reset_password(self):
+        return False  # Default behavior
+    
+    @must_reset_password.setter
+    def must_reset_password(self, value):
+        pass  # Ignore for now
+    
+    # Compatibility property for password
+    @property
+    def password(self):
+        return self.password_hash
+    
+    @password.setter
+    def password(self, value):
+        self.password_hash = value
 
 # DataSource model
 class DataSource(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
+    __tablename__ = 'data_sources'
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     name = db.Column(db.String(100), nullable=False)
-    type = db.Column(db.String(50), nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    type = db.Column('connection_type', db.String(50), nullable=False)
+    created_by = db.Column(db.String(36), db.ForeignKey('users.id'), nullable=False)
 
     # Store connection details in a JSON field for flexibility
-    connection_details = db.Column(db.Text, nullable=False)
+    connection_details = db.Column('connection_config', db.Text, nullable=False)
 
 # DataMart model
 class DataMart(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    data_source_id = db.Column(db.Integer, db.ForeignKey('data_source.id'), nullable=False)
+    user_id = db.Column(db.String(36), db.ForeignKey('users.id'), nullable=False)
+    data_source_id = db.Column(db.String(36), db.ForeignKey('data_sources.id'), nullable=False)
     definition = db.Column(db.Text, nullable=False) # JSON storing tables, columns, joins, etc.
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -127,7 +169,7 @@ class UploadTemplate(db.Model):
     data_source_id = db.Column(db.Integer, db.ForeignKey('data_source.id'), nullable=False)
     table_name = db.Column(db.String(100), nullable=False)
     upload_mode = db.Column(db.String(20), nullable=False)
-    created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    created_by = db.Column(db.String(36), db.ForeignKey('users.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     is_active = db.Column(db.Boolean, default=True)
@@ -144,7 +186,7 @@ class UploadHistory(db.Model):
     records_failed = db.Column(db.Integer)
     status = db.Column(db.String(20), nullable=False)
     error_log = db.Column(db.Text)
-    uploaded_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    uploaded_by = db.Column(db.String(36), db.ForeignKey('users.id'), nullable=False)
     uploaded_at = db.Column(db.DateTime, default=datetime.utcnow)
     processed_at = db.Column(db.DateTime)
 
@@ -161,7 +203,7 @@ class ChartLibrary(db.Model):
     preview_image = db.Column(db.String(255))
     category = db.Column(db.String(50))
     tags = db.Column(db.Text)
-    created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     is_public = db.Column(db.Boolean, default=False)
@@ -177,7 +219,7 @@ class ThemeLibrary(db.Model):
     color_palette = db.Column(db.Text, nullable=False)
     typography = db.Column(db.Text)
     preview_image = db.Column(db.String(255))
-    created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     is_public = db.Column(db.Boolean, default=False)
@@ -187,7 +229,7 @@ class DashboardAnalytics(db.Model):
     __tablename__ = 'dashboard_analytics'
     id = db.Column(db.Integer, primary_key=True)
     dashboard_id = db.Column(db.Integer, db.ForeignKey('dashboard.id'), nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     action_type = db.Column(db.String(50), nullable=False)
     session_id = db.Column(db.String(100))
     ip_address = db.Column(db.String(45))
@@ -208,8 +250,8 @@ class Role(db.Model):
     users = db.relationship(
         'User', 
         secondary='user_roles', 
-        primaryjoin='Role.id == UserRole.role_id',
-        secondaryjoin='User.id == UserRole.user_id',
+        primaryjoin="Role.id==UserRole.role_id",
+        secondaryjoin="User.id==UserRole.user_id",
         back_populates='roles'
     )
 
@@ -237,9 +279,9 @@ role_access_policies = db.Table('role_access_policies',
 class UserRole(db.Model):
     __tablename__ = 'user_roles'
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    user_id = db.Column(db.String(36), db.ForeignKey('users.id'), nullable=False)
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id'), nullable=False)
-    granted_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    granted_by = db.Column(db.String(36), db.ForeignKey('users.id'), nullable=False)
     granted_at = db.Column(db.DateTime, default=datetime.utcnow)
     expires_at = db.Column(db.DateTime)
     is_active = db.Column(db.Boolean, default=True)
@@ -258,7 +300,7 @@ class SchedulerJob(db.Model):
     is_active = db.Column(db.Boolean, default=True)
     last_run_at = db.Column(db.DateTime)
     next_run_at = db.Column(db.DateTime)
-    created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    created_by = db.Column(db.String(36), db.ForeignKey('users.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -274,7 +316,7 @@ class DashboardComponent(db.Model):
     width = db.Column(db.Integer, nullable=False, default=4)
     height = db.Column(db.Integer, nullable=False, default=3)
     config = db.Column(db.Text, nullable=False)
-    data_source_id = db.Column(db.Integer, db.ForeignKey('data_source.id'))
+    data_source_id = db.Column(db.String(36), db.ForeignKey('data_sources.id'))
     query_config = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -283,7 +325,7 @@ class Dashboard(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text, nullable=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    user_id = db.Column(db.String(36), db.ForeignKey('users.id'), nullable=False)
     theme_id = db.Column(db.Integer, db.ForeignKey('theme.id'), nullable=True)
     layout = db.Column(db.Text, nullable=False)  # JSON for dashboard layout
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -344,7 +386,7 @@ def apply_row_level_security(query, resource_type):
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User.query.get(int(user_id))
+    return User.query.get(str(user_id))
 
 # --- API Routes ---
 
@@ -424,7 +466,12 @@ def logout():
 @login_required
 def get_session():
     # Get user's roles as a list of role names
-    user_roles = [role.name for role in current_user.roles] if current_user.roles else []
+    try:
+        user_roles = [role.name for role in current_user.roles] if getattr(current_user, 'roles', None) else []
+    except Exception as e:
+        # If roles tables are not yet created or relationship fails, log and proceed with empty roles
+        logger.error(f"Error loading user roles: {e}")
+        user_roles = []
     
     return jsonify({
         'status': 'success',
@@ -1149,17 +1196,31 @@ def import_from_lovable():
 @login_required
 def manage_data_sources():
     if request.method == 'POST':
-        data = request.get_json()
-        name = data['name']
-        details = data['details']
+        data = request.get_json() or {}
+        name = data.get('name', '').strip()
+        # Accept both 'details' and legacy 'connection_params'
+        details = data.get('details') or data.get('connection_params') or {}
+        ds_type = (data.get('type') or '').strip()
+
+        # Normalize common type synonyms
+        if ds_type.lower() in ['postgresql', 'postgres']:
+            ds_type = 'postgres'
+
+        # Validate input
+        if not name:
+            return jsonify({'status': 'error', 'message': 'Missing required field: name'}), 400
+        if not ds_type:
+            return jsonify({'status': 'error', 'message': 'Missing required field: type'}), 400
+        if not isinstance(details, dict) or not details:
+            return jsonify({'status': 'error', 'message': 'Missing required field: details/connection_params'}), 400
 
         # Check for duplicate name
-        existing_by_name = DataSource.query.filter_by(user_id=current_user.id, name=name).first()
+        existing_by_name = DataSource.query.filter_by(created_by=current_user.id, name=name).first()
         if existing_by_name:
             return jsonify({'status': 'error', 'message': f'A data source with the name "{name}" already exists.'}), 409
 
         # Check for duplicate host/username combination
-        sources = DataSource.query.filter_by(user_id=current_user.id).all()
+        sources = DataSource.query.filter_by(created_by=current_user.id).all()
         for source in sources:
             existing_details = json.loads(source.connection_details)
             if existing_details.get('host') == details.get('host') and existing_details.get('user') == details.get('user'):
@@ -1167,16 +1228,16 @@ def manage_data_sources():
 
         new_source = DataSource(
             name=name,
-            type=data['type'],
+            type=ds_type,
             connection_details=json.dumps(details),
-            user_id=current_user.id
+            created_by=current_user.id
         )
         db.session.add(new_source)
         db.session.commit()
         return jsonify({'status': 'success', 'message': 'Data source saved!', 'id': new_source.id}), 201
 
     if request.method == 'GET':
-        sources = DataSource.query.filter_by(user_id=current_user.id).all()
+        sources = DataSource.query.filter_by(created_by=current_user.id).all()
         return jsonify([{
             'id': source.id,
             'name': source.name,
@@ -1187,9 +1248,9 @@ def manage_data_sources():
 @app.route('/api/data-sources/test', methods=['POST'])
 @login_required
 def test_data_source_connection():
-    data = request.get_json()
+    data = request.get_json() or {}
     source_type = data.get('type')
-    details = data.get('details', {})
+    details = data.get('details') or data.get('connection_params') or {}
     
     try:
         if source_type == 'postgres':
@@ -1255,13 +1316,13 @@ def test_data_source_connection():
             
         return jsonify({'status': 'error', 'message': message}), 500
 
-@app.route('/api/data-sources/<int:source_id>', methods=['PUT', 'DELETE'])
+@app.route('/api/data-sources/<string:source_id>', methods=['PUT', 'DELETE'])
 @login_required
 def update_or_delete_data_source(source_id):
     source = DataSource.query.get_or_404(source_id)
     
     # Allow access if user is admin or owns the data source
-    if not current_user.is_admin and source.user_id != current_user.id:
+    if not current_user.is_admin and source.created_by != current_user.id:
         return jsonify({'status': 'error', 'message': 'Unauthorized'}), 403
     
     if request.method == 'DELETE':
@@ -1348,7 +1409,7 @@ def test_connection():
             
         return jsonify({'status': 'error', 'message': message}), 500
 
-@app.route('/api/data-sources/<int:source_id>/schema')
+@app.route('/api/data-sources/<string:source_id>/schema')
 @login_required
 def get_data_source_schema(source_id):
     source = DataSource.query.get_or_404(source_id)

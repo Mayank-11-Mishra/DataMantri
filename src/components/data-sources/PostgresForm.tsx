@@ -11,16 +11,16 @@ const PostgresForm: React.FC<PostgresFormProps> = ({ existingData, onSaved }) =>
   const isEditing = !!existingData;
 
   const [name, setName] = useState(existingData?.name || '');
-  const [host, setHost] = useState(existingData?.details?.host || '');
-  const [port, setPort] = useState(existingData?.details?.port?.toString() || '5432');
-  const [user, setUser] = useState(existingData?.details?.user || '');
-  const [password, setPassword] = useState(existingData?.details?.password || '');
-  const [database, setDatabase] = useState(existingData?.details?.database || '');
+  const [host, setHost] = useState(existingData?.connection_params?.host || '');
+  const [port, setPort] = useState(existingData?.connection_params?.port?.toString() || '5432');
+  const [user, setUser] = useState(existingData?.connection_params?.user || '');
+  const [password, setPassword] = useState(existingData?.connection_params?.password || '');
+  const [database, setDatabase] = useState(existingData?.connection_params?.database || '');
 
   const handleTestConnection = async () => {
     const payload = {
       type: 'postgres',
-      details: { host, port: parseInt(port, 10), user, password, database },
+      connection_params: { host, port: parseInt(port, 10), user, password, database },
     };
 
     try {
@@ -60,7 +60,7 @@ const PostgresForm: React.FC<PostgresFormProps> = ({ existingData, onSaved }) =>
     const payload = {
       name,
       type: 'postgres',
-      details: { host, port: parseInt(port, 10), user, password, database },
+      connection_params: { host, port: parseInt(port, 10), user, password, database },
     };
 
     const url = isEditing ? `/api/data-sources/${existingData.id}` : '/api/data-sources';

@@ -15,9 +15,13 @@ import { Checkbox } from '@/components/ui/checkbox';
 
 // Interfaces
 interface DataSource {
-  id: number;
+  id: string;
   name: string;
-  type: string;
+  connection_type: string;
+  description?: string;
+  is_active?: boolean;
+  test_status?: string;
+  created_at?: string;
 }
 
 interface DataRow { [key: string]: any; }
@@ -28,20 +32,20 @@ interface ForeignKeyInfo { name: string; table: string; columns: string[]; refer
 const DataSourceBuilder: React.FC<{ connectionStatus?: string }> = () => {
   const { toast } = useToast();
   const [view, setView] = useState<'list' | 'create' | 'edit'>('list');
-  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [dataSources, setDataSources] = useState<DataSource[]>([]);
   const [selectedDataSource, setSelectedDataSource] = useState<DataSource | null>(null);
 
   useEffect(() => {
     if (view === 'list') {
-      fetch('/api/data-sources', { credentials: 'include' })
+      fetch('/api/data-sources', { credentials: 'include', cache: 'no-store' })
         .then((res) => res.json())
-        .then((data) => setDataSources(data))
+        .then((data) => setDataSources(Array.isArray(data) ? data : []))
         .catch((error) => console.error('Error fetching data sources:', error));
     }
   }, [view]);
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     try {
       const response = await fetch(`/api/data-sources/${id}`, { method: 'DELETE', credentials: 'include' });
       if (response.ok) {
@@ -85,7 +89,7 @@ const DataSourceBuilder: React.FC<{ connectionStatus?: string }> = () => {
               <Database className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{source.type}</div>
+              <div className="text-2xl font-bold">{source.connection_type}</div>
               <div className="flex justify-between items-center mt-4">
                 <Button variant="outline" size="sm" onClick={() => setSelectedDataSource(source)}>
                   Manage
@@ -130,7 +134,7 @@ const DataSourceDetailView = ({ dataSource, onBack }: { dataSource: DataSource, 
             <ChevronLeft className="h-4 w-4 mr-2" />
             Back to Data Sources
         </Button>
-        <h1 className="text-2xl font-bold mb-4">{dataSource.name} ({dataSource.type})</h1>
+        <h1 className="text-2xl font-bold mb-4">{dataSource.name} ({dataSource.connection_type})</h1>
         <Tabs defaultValue="schema">
             <TabsList>
                 <TabsTrigger value="schema">Schema</TabsTrigger>

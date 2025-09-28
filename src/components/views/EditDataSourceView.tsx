@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import PostgresForm from '../data-sources/PostgresForm';
 
 interface EditDataSourceViewProps {
-  dataSourceId: number;
+  dataSourceId: string;
   onCancel: () => void;
   onSaved: () => void;
 }
@@ -38,7 +38,7 @@ const EditDataSourceView: React.FC<EditDataSourceViewProps> = ({ dataSourceId, o
     if (error) return <p className="text-red-500">Error: {error}</p>;
     if (!dataSource) return <p>Data source not found.</p>;
 
-    switch (dataSource.type) {
+    switch (dataSource.connection_type) {
       case 'postgres':
         return <PostgresForm existingData={dataSource} onSaved={onSaved} />;
       // Add cases for other types like mongodb, bigquery as they are implemented
