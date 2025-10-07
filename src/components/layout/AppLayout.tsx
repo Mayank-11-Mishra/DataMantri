@@ -7,11 +7,11 @@ import AppTopbar from './AppTopbar';
 const AppLayout = () => {
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full">
+      <div className="min-h-screen flex w-full overflow-hidden">
         <AppSidebar />
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col min-w-0">
           <AppTopbar />
-          <main className="flex-1 p-6 bg-background">
+          <main className="flex-1 p-6 bg-background overflow-auto min-w-0">
             <Outlet />
           </main>
         </div>

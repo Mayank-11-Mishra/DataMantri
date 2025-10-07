@@ -29,7 +29,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   useEffect(() => {
     const checkSession = async () => {
       try {
-        const response = await fetch('/api/session', { credentials: 'include' });
+        // Try to get session from backend
+        const response = await fetch('/api/session', {
+          method: 'GET',
+          credentials: 'include',
+        });
+        
         if (response.ok) {
           const data = await response.json();
           setUser(data.user);
@@ -37,6 +42,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           setUser(null);
         }
       } catch (error) {
+        console.error('Session check error:', error);
         setUser(null);
       } finally {
         setIsLoading(false);
@@ -48,29 +54,28 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const login = async (email: string, password: string): Promise<{ success: boolean; mustResetPassword?: boolean }> => {
     setIsLoading(true);
     try {
+      // Make real API call to backend
       const response = await fetch('/api/auth/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include', // Important: Include cookies for session
         body: JSON.stringify({ email, password }),
       });
 
       if (response.ok) {
-        const loginData = await response.json();
-        // Refetch user from session to confirm login
-        const sessionResponse = await fetch('/api/session', { credentials: 'include' });
-        if (sessionResponse.ok) {
-          const sessionData = await sessionResponse.json();
-          if (sessionData.user) {
-            setUser(sessionData.user);
-            return { 
-              success: true, 
-              mustResetPassword: loginData.must_reset_password 
-            };
-          }
-        }
+        const data = await response.json();
+        setUser(data.user);
+        return { 
+          success: true, 
+          mustResetPassword: data.user.must_reset_password || false 
+        };
+      } else {
+        const errorData = await response.json().catch(() => ({ error: 'Login failed' }));
+        console.error('Login failed:', errorData);
+        return { success: false };
       }
-      return { success: false };
     } catch (error) {
       console.error('Login error:', error);
       return { success: false };
@@ -81,7 +86,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const logout = async () => {
     try {
-      await fetch('/logout', { method: 'POST', credentials: 'include' });
+      // Call backend logout to clear session
+      await fetch('/logout', {
+        method: 'POST',
+        credentials: 'include',
+      });
     } catch (error) {
       console.error('Logout error:', error);
     } finally {

@@ -380,7 +380,9 @@ const TableManagementSection: React.FC<TableManagementSectionProps> = ({ connect
           if (schemaResponse.ok) {
             const schemaData = await schemaResponse.json();
             const schema = schemaData.schema || {};
-            const columns = schema[tableName] || [];
+            // Handle both old format (array) and new format (object with columns)
+            const tableData = schema[tableName] || {};
+            const columns = tableData.columns || tableData || [];
             setTableStructure(columns);
           }
         }

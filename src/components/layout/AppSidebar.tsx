@@ -14,7 +14,9 @@ import {
   BarChart,
   Users,
   Shield,
-  Server
+  Server,
+  Sparkles,
+  Bell
 } from "lucide-react";
 
 import {
@@ -32,33 +34,37 @@ import {
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Badge } from "@/components/ui/badge";
 
-  const navigationItems = [
-  { title: "Analytics", url: "/analytics", icon: BarChart, adminOnly: true },
-  { title: "Data Management Suite", url: "/database-management", icon: Server, adminOnly: true },
-  { title: "Dashboards", url: "/dashboard", icon: Home },
-  { title: "Dashboard Builder", url: "/dashboard-builder", icon: LayoutDashboard },
-  { title: "Theme & Chart Builder", url: "/theme-library", icon: Palette },
+const navigationItems = [
+  { title: "Homepage", url: "/dashboard", icon: Home },
+  { title: "Data Management", url: "/database-management", icon: Server },
+  { title: "Alert Management", url: "/alert-management", icon: Bell },
+  { title: "All Dashboards", url: "/all-dashboards", icon: LayoutDashboard },
+  { title: "Dashboard Builder", url: "/dashboard-builder", icon: PieChart },
+  { title: "Themes & Charts", url: "/theme-library", icon: Palette },
   { title: "Scheduler", url: "/scheduler", icon: Calendar },
-  { title: "Access Management", url: "/access-management", icon: Shield, adminOnly: true },
-  { title: "Upload Utility", url: "/upload-utility", icon: Upload },
+  { title: "Access Control", url: "/access-management", icon: Shield, adminOnly: true },
 ];
 
 export function AppSidebar() {
   const { state } = useSidebar();
   const location = useLocation();
-    const { user, logout } = useAuth();
+  const { user, logout } = useAuth();
   const currentPath = location.pathname;
 
   const isActive = (path: string) => currentPath === path;
-  const getNavCls = ({ isActive }: { isActive: boolean }) =>
-    isActive ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium" : "hover:bg-sidebar-accent/50";
 
   const handleLogout = () => {
     logout();
   };
 
   const isCollapsed = state === "collapsed";
+
+  // Filter navigation items based on admin status
+  const filteredNavigationItems = navigationItems.filter(
+    item => !item.adminOnly || user?.is_admin
+  );
 
   return (
     <Sidebar className={isCollapsed ? "w-14" : "w-60"} collapsible="icon">
@@ -69,7 +75,7 @@ export function AppSidebar() {
             {user?.organization_logo_url ? (
               <img src={user.organization_logo_url} alt={`${user.organization_name} Logo`} className="h-8 w-8 object-contain" />
             ) : (
-              <BarChart3 className="h-6 w-6 text-sidebar-primary" />
+              <BarChart3 className="h-6 w-6 text-primary" />
             )}
             {!isCollapsed && (
               <div className="flex flex-col">
@@ -80,45 +86,118 @@ export function AppSidebar() {
           </div>
         </div>
 
+        {/* Navigation */}
         <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+          {!isCollapsed && (
+            <SidebarGroupLabel className="px-4 py-2 text-xs font-semibold text-muted-foreground">
+              NAVIGATION
+            </SidebarGroupLabel>
+          )}
           <SidebarGroupContent>
             <SidebarMenu>
-                            {navigationItems
-                .filter(item => !item.adminOnly || (user?.is_admin === true))
-                .map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink to={item.url} className={getNavCls}>
-                      <item.icon className="h-4 w-4" />
-                      {!isCollapsed && <span>{item.title}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {filteredNavigationItems.map((item) => {
+                const active = isActive(item.url);
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <SidebarMenuButton
+                          asChild
+                          isActive={active}
+                          className={`${
+                            active 
+                              ? 'bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground' 
+                              : 'hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
+                          }`}
+                        >
+                          <NavLink to={item.url} className="flex items-center gap-3 px-3 py-2">
+                            <item.icon className="h-5 w-5" />
+                            {!isCollapsed && <span className="flex-1">{item.title}</span>}
+                          </NavLink>
+                        </SidebarMenuButton>
+                      </TooltipTrigger>
+                      {isCollapsed && (
+                        <TooltipContent side="right">
+                          <p>{item.title}</p>
+                        </TooltipContent>
+                      )}
+                    </Tooltip>
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="p-4">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent"
-              onClick={handleLogout}
-            >
-              <LogOut className="h-4 w-4" />
-              {!isCollapsed && <span className="ml-2">Logout</span>}
-            </Button>
-          </TooltipTrigger>
-          {isCollapsed && (
-            <TooltipContent side="right">
-              <p>Logout</p>
-            </TooltipContent>
+      {/* Footer with User Info */}
+      <SidebarFooter>
+        <div className="p-4 border-t border-sidebar-border">
+          {!isCollapsed ? (
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <span className="text-sm font-semibold text-primary">
+                    {user?.name?.charAt(0).toUpperCase() || 'U'}
+                  </span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-sidebar-foreground truncate">
+                    {user?.name || 'User'}
+                  </p>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {user?.email || 'user@example.com'}
+                  </p>
+                </div>
+              </div>
+              {user?.is_admin && (
+                <Badge variant="secondary" className="w-full justify-center">
+                  Admin
+                </Badge>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full"
+                onClick={handleLogout}
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Logout
+              </Button>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center gap-2">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center cursor-pointer">
+                    <span className="text-sm font-semibold text-primary">
+                      {user?.name?.charAt(0).toUpperCase() || 'U'}
+                    </span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="right">
+                  <p>{user?.name || 'User'}</p>
+                  <p className="text-xs text-muted-foreground">{user?.email}</p>
+                </TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-10 w-10 p-0"
+                    onClick={handleLogout}
+                  >
+                    <LogOut className="h-5 w-5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="right">
+                  <p>Logout</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
           )}
-        </Tooltip>
+        </div>
       </SidebarFooter>
     </Sidebar>
   );

@@ -10,10 +10,8 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import DashboardAnalytics from "./pages/DashboardAnalytics";
 import DashboardBuilder from "./pages/DashboardBuilder";
-import UploadUtility from "./pages/UploadUtility";
 import Upload from "./pages/Upload";
 import AccessManagement from './pages/AccessManagement';
-import Analytics from './pages/Analytics';
 import ThemeLibrary from "./pages/ThemeLibrary";
 import ThemeBuilder from "./pages/ThemeBuilder";
 import ChartBuilder from "./pages/ChartBuilder";
@@ -21,8 +19,11 @@ import Scheduler from "./pages/Scheduler";
 import Settings from "./pages/Settings";
 import DatabaseManagement from "./pages/DatabaseManagement";
 import DashboardViewer from "./pages/DashboardViewer";
+import AllDashboards from "./pages/AllDashboards";
+import DashboardView from "./pages/DashboardView";
 import NotFound from "./pages/NotFound";
 import ResetPassword from "./pages/ResetPassword";
+import AlertManagement from "./pages/AlertManagement";
 
 const queryClient = new QueryClient();
 
@@ -44,7 +45,6 @@ const App = () => (
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/dashboard-analytics" element={<DashboardAnalytics />} />
               <Route path="/dashboard-builder" element={<DashboardBuilder />} />
-              <Route path="/upload-utility" element={<UploadUtility />} />
               <Route path="/upload" element={<Upload />} />
               <Route path="/theme-library" element={<ThemeLibrary />} />
               <Route path="/themes" element={<ThemeBuilder />} />
@@ -53,7 +53,9 @@ const App = () => (
               <Route path="/settings" element={<Settings />} />
               <Route path="/database-management" element={<DatabaseManagement />} />
               <Route path="/access-management" element={<ProtectedRoute adminOnly><AccessManagement /></ProtectedRoute>} />
-              <Route path="/analytics" element={<ProtectedRoute adminOnly><Analytics /></ProtectedRoute>} />
+              <Route path="/alert-management" element={<AlertManagement />} />
+              <Route path="/all-dashboards" element={<AllDashboards />} />
+              <Route path="/dashboard-view/:id" element={<DashboardView />} />
               <Route path="/dashboard/:id" element={<DashboardViewer />} />
             </Route>
             <Route path="*" element={<NotFound />} />

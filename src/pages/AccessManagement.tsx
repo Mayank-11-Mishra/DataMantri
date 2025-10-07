@@ -99,8 +99,9 @@ const AccessManagement: React.FC = () => {
   const [selectedRoleId, setSelectedRoleId] = useState<string | null>(null);
   const [featurePermissions, setFeaturePermissions] = useState<Record<string, boolean>>({});
 
-  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
-  const isSuperAdmin = user?.role === 'super_admin';
+  // Use is_admin flag from backend instead of checking role names
+  const isAdmin = user?.is_admin || false;
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN' || user?.role === 'super_admin';
 
   useEffect(() => {
     if (isAdmin) {
@@ -365,22 +366,58 @@ const AccessManagement: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Access Management</h1>
-          <p className="text-muted-foreground">
-            Manage users, roles, and permissions for your DataMantri platform
+      {/* Modern Header with Gradient */}
+      <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 p-8 text-white shadow-lg">
+        <div className="absolute inset-0 bg-black/10"></div>
+        <div className="relative z-10">
+          <div className="flex items-center gap-3 mb-2">
+            <Shield className="h-10 w-10" />
+            <h1 className="text-4xl font-bold">Access Management</h1>
+          </div>
+          <p className="text-blue-50 text-lg">
+            Control who can access what in your DataMantri platform
           </p>
+          <div className="mt-6 flex gap-4">
+            <div className="bg-white/20 backdrop-blur-sm rounded-lg px-4 py-2">
+              <div className="text-2xl font-bold">{users.length}</div>
+              <div className="text-sm text-blue-100">Total Users</div>
+            </div>
+            <div className="bg-white/20 backdrop-blur-sm rounded-lg px-4 py-2">
+              <div className="text-2xl font-bold">{roles.length}</div>
+              <div className="text-sm text-blue-100">Roles</div>
+            </div>
+            <div className="bg-white/20 backdrop-blur-sm rounded-lg px-4 py-2">
+              <div className="text-2xl font-bold">{permissions.length}</div>
+              <div className="text-sm text-blue-100">Permissions</div>
+            </div>
+          </div>
         </div>
       </div>
 
       <Tabs defaultValue="users" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="users">Users</TabsTrigger>
-          {isSuperAdmin && <TabsTrigger value="organizations">Organizations</TabsTrigger>}
-          <TabsTrigger value="roles">Roles</TabsTrigger>
-          <TabsTrigger value="data-access">Data Access</TabsTrigger>
-          <TabsTrigger value="feature-access">Feature Access</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-flex">
+          <TabsTrigger value="users" className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            Users
+          </TabsTrigger>
+          {isSuperAdmin && (
+            <TabsTrigger value="organizations" className="flex items-center gap-2">
+              <Building className="h-4 w-4" />
+              Organizations
+            </TabsTrigger>
+          )}
+          <TabsTrigger value="roles" className="flex items-center gap-2">
+            <Shield className="h-4 w-4" />
+            Roles
+          </TabsTrigger>
+          <TabsTrigger value="data-access" className="flex items-center gap-2">
+            <Key className="h-4 w-4" />
+            Data Access
+          </TabsTrigger>
+          <TabsTrigger value="feature-access" className="flex items-center gap-2">
+            <Settings className="h-4 w-4" />
+            Features
+          </TabsTrigger>
         </TabsList>
 
         {/* Organizations Management (Super Admin only) */}
@@ -489,34 +526,106 @@ const AccessManagement: React.FC = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Users className="h-5 w-5" />
-                All Users
+                All Users ({users.length})
               </CardTitle>
+              <CardDescription>Complete user directory with metadata</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {users.map((user) => (
-                  <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="flex items-center space-x-4">
-                      <div>
-                        <h4 className="font-medium">{user.first_name} {user.last_name}</h4>
-                        <p className="text-sm text-muted-foreground">{user.email}</p>
-                        <div className="flex gap-1 mt-1">
-                          <Badge variant="secondary" className="text-xs capitalize">{user.role.replace('_', ' ')}</Badge>
-                          {user.organization_name && <Badge variant="outline" className="text-xs">{user.organization_name}</Badge>}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Switch
-                        checked={user.is_active}
-                        onCheckedChange={() => toggleUserStatus(user.id, user.is_active)}
-                      />
-                      <Button variant="ghost" size="sm">
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="bg-gradient-to-r from-blue-50 to-purple-50 border-b-2 border-blue-200">
+                      <th className="text-left p-3 font-semibold text-sm">Name</th>
+                      <th className="text-left p-3 font-semibold text-sm">Email</th>
+                      <th className="text-left p-3 font-semibold text-sm">Role</th>
+                      <th className="text-left p-3 font-semibold text-sm">Organization</th>
+                      <th className="text-left p-3 font-semibold text-sm">Status</th>
+                      <th className="text-left p-3 font-semibold text-sm">Created By</th>
+                      <th className="text-left p-3 font-semibold text-sm">Created On</th>
+                      <th className="text-left p-3 font-semibold text-sm">Last Updated By</th>
+                      <th className="text-left p-3 font-semibold text-sm">Last Updated</th>
+                      <th className="text-center p-3 font-semibold text-sm">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {users.map((user) => (
+                      <tr key={user.id} className="border-b hover:bg-blue-50/30 transition-colors">
+                        <td className="p-3">
+                          <div className="font-medium">{user.first_name} {user.last_name}</div>
+                        </td>
+                        <td className="p-3">
+                          <div className="text-sm text-muted-foreground">{user.email}</div>
+                        </td>
+                        <td className="p-3">
+                          <Badge variant="secondary" className="text-xs capitalize">
+                            {user.role.replace('_', ' ')}
+                          </Badge>
+                        </td>
+                        <td className="p-3">
+                          {user.organization_name ? (
+                            <Badge variant="outline" className="text-xs">{user.organization_name}</Badge>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">-</span>
+                          )}
+                        </td>
+                        <td className="p-3">
+                          <div className="flex items-center gap-2">
+                            <Switch
+                              checked={user.is_active}
+                              onCheckedChange={() => toggleUserStatus(user.id, user.is_active)}
+                            />
+                            <span className="text-xs text-muted-foreground">
+                              {user.is_active ? 'Active' : 'Inactive'}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="p-3">
+                          <div className="text-sm">{user.created_by_name || '-'}</div>
+                        </td>
+                        <td className="p-3">
+                          <div className="text-sm">
+                            {user.created_at ? new Date(user.created_at).toLocaleDateString('en-US', {
+                              year: 'numeric',
+                              month: 'short',
+                              day: 'numeric'
+                            }) : '-'}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {user.created_at ? new Date(user.created_at).toLocaleTimeString('en-US', {
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            }) : ''}
+                          </div>
+                        </td>
+                        <td className="p-3">
+                          <div className="text-sm">{user.updated_by_name || '-'}</div>
+                        </td>
+                        <td className="p-3">
+                          <div className="text-sm">
+                            {user.updated_at ? new Date(user.updated_at).toLocaleDateString('en-US', {
+                              year: 'numeric',
+                              month: 'short',
+                              day: 'numeric'
+                            }) : '-'}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {user.updated_at ? new Date(user.updated_at).toLocaleTimeString('en-US', {
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            }) : ''}
+                          </div>
+                        </td>
+                        <td className="p-3">
+                          <div className="flex items-center justify-center gap-2">
+                            <Button variant="ghost" size="sm" title="Edit user">
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </CardContent>
           </Card>
@@ -556,25 +665,47 @@ const AccessManagement: React.FC = () => {
 
               {selectedRoleId && (
                 <div className="space-y-4">
-                  {Object.entries(groupedPermissions).map(([category, perms]) => (
-                    <div key={category} className="border rounded-lg p-4">
-                      <h4 className="font-medium mb-2 capitalize">{category}</h4>
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                        {perms.map((permission) => (
-                          <label key={permission.id} className="flex items-center space-x-2 cursor-pointer">
-                            <Checkbox
-                              id={`feat-${permission.id}`}
-                              checked={!!featurePermissions[permission.id]}
-                              onCheckedChange={(checked) => {
-                                setFeaturePermissions(prev => ({ ...prev, [permission.id]: !!checked }));
-                              }}
-                            />
-                            <span className="text-sm">{permission.name}</span>
-                          </label>
-                        ))}
-                      </div>
+                  {permissions.length === 0 ? (
+                    <div className="border rounded-lg p-8 text-center text-muted-foreground">
+                      <Shield className="h-12 w-12 mx-auto mb-2 opacity-20" />
+                      <p>Loading permissions...</p>
                     </div>
-                  ))}
+                  ) : (
+                    <>
+                      {Object.entries(groupedPermissions).map(([category, perms]) => (
+                        <div key={category} className="border-2 rounded-xl p-5 bg-gradient-to-br from-white to-gray-50 shadow-sm hover:shadow-md transition-shadow">
+                          <div className="flex items-center gap-2 mb-4">
+                            <div className="h-8 w-1 bg-gradient-to-b from-blue-500 to-purple-500 rounded-full"></div>
+                            <h4 className="font-bold text-lg capitalize">{category.replace('_', ' ')}</h4>
+                            <Badge variant="secondary" className="ml-auto">{perms.length} permissions</Badge>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                            {perms.map((permission) => (
+                              <label 
+                                key={permission.id} 
+                                className="flex items-start space-x-3 p-3 rounded-lg hover:bg-blue-50 cursor-pointer transition-colors border border-transparent hover:border-blue-200"
+                              >
+                                <Checkbox
+                                  id={`feat-${permission.id}`}
+                                  checked={!!featurePermissions[permission.id]}
+                                  onCheckedChange={(checked) => {
+                                    setFeaturePermissions(prev => ({ ...prev, [permission.id]: !!checked }));
+                                  }}
+                                  className="mt-0.5"
+                                />
+                                <div className="flex-1 min-w-0">
+                                  <span className="text-sm font-medium block">{permission.name || permission.code}</span>
+                                  {permission.description && (
+                                    <span className="text-xs text-muted-foreground block mt-0.5">{permission.description}</span>
+                                  )}
+                                </div>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </>
+                  )}
                   <div className="flex justify-end">
                     <Button
                       disabled={loading}
@@ -645,34 +776,56 @@ const AccessManagement: React.FC = () => {
               </div>
 
               <div>
-                <Label>Permissions</Label>
-                <div className="space-y-4 mt-2">
-                  {Object.entries(groupedPermissions).map(([category, perms]) => (
-                    <div key={category} className="border rounded-lg p-4">
-                      <h4 className="font-medium mb-2 capitalize">{category}</h4>
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                        {perms.map((permission) => (
-                          <label key={permission.id} className="flex items-center space-x-2 cursor-pointer">
-                            <Checkbox
-                              id={`perm-${permission.id}`}
-                              checked={!!roleForm.permissions[permission.id]}
-                              onCheckedChange={(checked) => {
-                                setRoleForm(prev => ({
-                                  ...prev,
-                                  permissions: {
-                                    ...prev.permissions,
-                                    [permission.id]: !!checked
-                                  }
-                                }));
-                              }}
-                            />
-                            <span className="text-sm">{permission.name}</span>
-                          </label>
-                        ))}
+                <Label className="text-base font-semibold">Permissions</Label>
+                <p className="text-sm text-muted-foreground mb-4">Select permissions for this role</p>
+                
+                {permissions.length === 0 ? (
+                  <div className="border rounded-lg p-8 text-center text-muted-foreground">
+                    <Shield className="h-12 w-12 mx-auto mb-2 opacity-20" />
+                    <p>Loading permissions...</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4 mt-2">
+                    {Object.entries(groupedPermissions).map(([category, perms]) => (
+                      <div key={category} className="border-2 rounded-xl p-5 bg-gradient-to-br from-white to-gray-50 shadow-sm hover:shadow-md transition-shadow">
+                        <div className="flex items-center gap-2 mb-4">
+                          <div className="h-8 w-1 bg-gradient-to-b from-blue-500 to-purple-500 rounded-full"></div>
+                          <h4 className="font-bold text-lg capitalize">{category.replace('_', ' ')}</h4>
+                          <Badge variant="secondary" className="ml-auto">{perms.length} permissions</Badge>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                          {perms.map((permission) => (
+                            <label 
+                              key={permission.id} 
+                              className="flex items-start space-x-3 p-3 rounded-lg hover:bg-blue-50 cursor-pointer transition-colors border border-transparent hover:border-blue-200"
+                            >
+                              <Checkbox
+                                id={`perm-${permission.id}`}
+                                checked={!!roleForm.permissions[permission.id]}
+                                onCheckedChange={(checked) => {
+                                  setRoleForm(prev => ({
+                                    ...prev,
+                                    permissions: {
+                                      ...prev.permissions,
+                                      [permission.id]: !!checked
+                                    }
+                                  }));
+                                }}
+                                className="mt-0.5"
+                              />
+                              <div className="flex-1 min-w-0">
+                                <span className="text-sm font-medium block">{permission.name || permission.code}</span>
+                                {permission.description && (
+                                  <span className="text-xs text-muted-foreground block mt-0.5">{permission.description}</span>
+                                )}
+                              </div>
+                            </label>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="pt-4">

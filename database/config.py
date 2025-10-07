@@ -7,7 +7,7 @@ Supports multiple database engines with connection pooling and environment-based
 
 import os
 from urllib.parse import quote_plus
-from sqlalchemy import create_engine, event
+from sqlalchemy import create_engine, event, text
 from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy.pool import QueuePool
 from dotenv import load_dotenv
@@ -92,7 +92,9 @@ class DatabaseConfig:
     
     def _get_sqlite_url(self):
         """Generate SQLite connection URL"""
-        db_path = os.getenv('SQLITE_PATH', 'instance/dataviz.db')
+        # Get the project root directory (parent of database folder)
+        project_root = os.path.dirname(os.path.dirname(__file__))
+        db_path = os.getenv('SQLITE_PATH', os.path.join(project_root, 'instance', 'dataviz.db'))
         # Ensure the directory exists
         db_dir = os.path.dirname(db_path)
         if db_dir and not os.path.exists(db_dir):
@@ -181,11 +183,11 @@ def test_connection():
     try:
         with engine.connect() as conn:
             if config.db_type == 'postgresql':
-                result = conn.execute("SELECT version()")
+                result = conn.execute(text("SELECT version()"))
             elif config.db_type == 'mysql':
-                result = conn.execute("SELECT VERSION()")
+                result = conn.execute(text("SELECT VERSION()"))
             elif config.db_type == 'sqlite':
-                result = conn.execute("SELECT sqlite_version()")
+                result = conn.execute(text("SELECT sqlite_version()"))
             
             version = result.fetchone()[0]
             logger.info(f"Database connection successful. Version: {version}")
@@ -210,7 +212,7 @@ def health_check():
     try:
         with engine.connect() as conn:
             # Test basic connectivity
-            conn.execute("SELECT 1")
+            conn.execute(text("SELECT 1"))
             
             # Check if key tables exist
             if config.db_type == 'postgresql':

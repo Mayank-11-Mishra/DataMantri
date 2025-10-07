@@ -19,7 +19,9 @@ import {
   BookOpen,
   CheckCircle,
   XCircle,
-  Download
+  Download,
+  Database,
+  Activity
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import SQLEditor from './SQLEditor';
@@ -86,6 +88,9 @@ const MultiTabSQLEditor: React.FC<MultiTabSQLEditorProps> = ({
   const [activeTab, setActiveTab] = useState('1');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [showColumns, setShowColumns] = useState(false);
+  const [availableColumns, setAvailableColumns] = useState<Record<string, Array<{name: string, type: string}>>>({});
+  const [loadingColumns, setLoadingColumns] = useState(false);
   const tabCounter = useRef(1);
 
   const createNewTab = useCallback(() => {
@@ -241,6 +246,56 @@ const MultiTabSQLEditor: React.FC<MultiTabSQLEditorProps> = ({
     });
   }, [toast]);
 
+  // Fetch columns from schema
+  const fetchAvailableColumns = useCallback(async () => {
+    if (!selectedDatabase) return;
+    
+    setLoadingColumns(true);
+    try {
+      const encoded = encodeURIComponent(selectedDatabase);
+      const response = await fetch(`/api/database/${encoded}/schema`, { credentials: 'include' });
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('MultiTabSQLEditor: Schema fetched:', data);
+        
+        if (data.status === 'success' && data.schema) {
+          const columnsMap: Record<string, Array<{name: string, type: string}>> = {};
+          
+          Object.keys(data.schema).forEach(tableName => {
+            const tableData = data.schema[tableName];
+            let columns = [];
+            
+            if (Array.isArray(tableData)) {
+              columns = tableData;
+            } else if (tableData.columns && Array.isArray(tableData.columns)) {
+              columns = tableData.columns;
+            }
+            
+            columnsMap[tableName] = columns.map((col: any) => ({
+              name: col.column_name || col.name,
+              type: col.data_type || col.type
+            }));
+          });
+          
+          setAvailableColumns(columnsMap);
+          console.log('MultiTabSQLEditor: Columns loaded for', Object.keys(columnsMap).length, 'tables');
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch columns:', error);
+    } finally {
+      setLoadingColumns(false);
+    }
+  }, [selectedDatabase]);
+
+  // Fetch columns when database changes
+  React.useEffect(() => {
+    if (selectedDatabase) {
+      fetchAvailableColumns();
+    }
+  }, [selectedDatabase, fetchAvailableColumns]);
+
   const exportResults = useCallback((tabId: string, format: string) => {
     const tab = tabs.find(t => t.id === tabId);
     if (!tab?.result || tab.result.status !== 'success') {
@@ -304,14 +359,23 @@ const MultiTabSQLEditor: React.FC<MultiTabSQLEditorProps> = ({
   return (
     <div className={`${isFullscreen ? 'fixed inset-0 z-50 bg-background' : ''}`}>
       <Card className={isFullscreen ? 'h-full rounded-none border-0' : ''}>
-        <CardHeader className="pb-2">
+        <CardHeader className="pb-2 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 border-b-2 border-blue-200">
           <div className="flex items-center justify-between">
-            <CardTitle>SQL Query Tabs</CardTitle>
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg">
+                <Activity className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <CardTitle className="text-lg font-bold">Query Editor</CardTitle>
+                <p className="text-sm text-gray-600">Multi-tab SQL execution</p>
+              </div>
+            </div>
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                className="h-9 border-blue-300 hover:bg-blue-50"
               >
                 {sidebarCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
                 {sidebarCollapsed ? 'Show Panel' : 'Hide Panel'}
@@ -320,6 +384,7 @@ const MultiTabSQLEditor: React.FC<MultiTabSQLEditorProps> = ({
                 variant="outline"
                 size="sm"
                 onClick={() => setIsFullscreen(!isFullscreen)}
+                className="h-9 border-blue-300 hover:bg-blue-50"
               >
                 {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
                 {isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
@@ -332,14 +397,15 @@ const MultiTabSQLEditor: React.FC<MultiTabSQLEditorProps> = ({
             {/* Main Content Area */}
             <div className={`${sidebarCollapsed ? 'col-span-1' : 'col-span-3'} space-y-4`}>
               <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-            <div className="flex items-center justify-between">
-              <TabsList className="h-auto p-1 flex-1 justify-start overflow-x-auto">
+            <div className="flex items-center justify-between p-3 bg-gradient-to-r from-gray-50 to-blue-50 backdrop-blur-sm rounded-t-lg border-b">
+              <TabsList className="h-auto p-1 flex-1 justify-start overflow-x-auto bg-transparent">
                 {tabs.map((tab) => (
                   <TabsTrigger
                     key={tab.id}
                     value={tab.id}
-                    className="relative group px-3 py-2 flex items-center gap-2 min-w-0"
+                    className="relative group px-3 py-2 flex items-center gap-2 min-w-0 data-[state=active]:bg-blue-600 data-[state=active]:text-white"
                   >
+                    <FileText className="h-4 w-4" />
                     <span 
                       className="truncate max-w-32"
                       onDoubleClick={() => {
@@ -355,12 +421,12 @@ const MultiTabSQLEditor: React.FC<MultiTabSQLEditorProps> = ({
                       <div className="w-2 h-2 bg-orange-500 rounded-full" title="Unsaved changes" />
                     )}
                     {tab.isExecuting && (
-                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" title="Executing..." />
+                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" title="Executing..." />
                     )}
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-4 w-4 p-0 opacity-0 group-hover:opacity-100"
+                      className="h-4 w-4 p-0 opacity-0 group-hover:opacity-100 hover:bg-red-100 hover:text-red-600"
                       onClick={(e) => {
                         e.stopPropagation();
                         closeTab(tab.id);
@@ -375,9 +441,9 @@ const MultiTabSQLEditor: React.FC<MultiTabSQLEditorProps> = ({
                 variant="outline"
                 size="sm"
                 onClick={createNewTab}
-                className="ml-2"
+                className="ml-2 h-9 bg-gradient-to-r from-blue-500 to-indigo-600 text-white border-0 hover:from-blue-600 hover:to-indigo-700"
               >
-                <Plus className="h-4 w-4" />
+                <Plus className="h-4 w-4 mr-1" />
                 New Tab
               </Button>
             </div>
@@ -388,128 +454,313 @@ const MultiTabSQLEditor: React.FC<MultiTabSQLEditorProps> = ({
                 value={tab.id} 
                 className="flex-1 mt-4 space-y-4 overflow-hidden"
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline">
-                      Database: {selectedDatabase || 'None'}
-                    </Badge>
-                    {tab.result && (
-                      <Badge variant={tab.result.status === 'success' ? 'default' : 'destructive'}>
-                        {tab.result.status === 'success' 
-                          ? `${tab.result.rowCount} rows • ${tab.result.executionTime}s`
-                          : 'Error'
-                        }
+                <div className="p-3 bg-gradient-to-r from-gray-50 to-blue-50 backdrop-blur-sm rounded-lg border">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Badge className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white border-0">
+                        <Database className="h-3 w-3 mr-1" />
+                        {selectedDatabase || 'None'}
                       </Badge>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => duplicateTab(tab.id)}
-                    >
-                      <Copy className="h-4 w-4 mr-2" />
-                      Duplicate
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => onSaveQuery?.(tab.name, tab.query)}
-                      disabled={!tab.query.trim()}
-                    >
-                      <Save className="h-4 w-4 mr-2" />
-                      Save
-                    </Button>
-                    {tab.result && tab.result.status === 'success' && tab.result.rows && tab.result.rows.length > 0 && (
-                      <Select onValueChange={(format) => exportResults(tab.id, format)}>
-                        <SelectTrigger className="w-32">
-                          <SelectValue placeholder="Export" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="csv">
-                            <div className="flex items-center gap-2">
-                              <Download className="h-4 w-4" />
-                              CSV
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="json">
-                            <div className="flex items-center gap-2">
-                              <Download className="h-4 w-4" />
-                              JSON
-                            </div>
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    )}
-                    <Button
-                      onClick={() => executeQuery(tab.id)}
-                      disabled={tab.isExecuting || !selectedDatabase || !tab.query.trim()}
-                    >
-                      <Play className="h-4 w-4 mr-2" />
-                      {tab.isExecuting ? 'Executing...' : 'Execute'}
-                    </Button>
+                      {tab.result && (
+                        <Badge className={`${
+                          tab.result.status === 'success' 
+                            ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white' 
+                            : 'bg-gradient-to-r from-red-500 to-rose-600 text-white'
+                        } border-0`}>
+                          {tab.result.status === 'success' ? (
+                            <>
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              {tab.result.rowCount} rows • {tab.result.executionTime}s
+                            </>
+                          ) : (
+                            <>
+                              <XCircle className="h-3 w-3 mr-1" />
+                              Error
+                            </>
+                          )}
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowColumns(!showColumns)}
+                        className={`h-9 ${showColumns ? 'bg-green-50 border-green-300 text-green-700' : 'border-gray-300 hover:bg-gray-100'}`}
+                      >
+                        <Database className="h-4 w-4 mr-1" />
+                        {showColumns ? 'Hide' : 'Show'} Columns
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => duplicateTab(tab.id)}
+                        className="h-9 border-gray-300 hover:bg-gray-100"
+                      >
+                        <Copy className="h-4 w-4 mr-1" />
+                        Duplicate
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onSaveQuery?.(tab.name, tab.query)}
+                        disabled={!tab.query.trim()}
+                        className="h-9 border-amber-300 hover:bg-amber-50 text-amber-700"
+                      >
+                        <Save className="h-4 w-4 mr-1" />
+                        Save
+                      </Button>
+                      {tab.result && tab.result.status === 'success' && tab.result.rows && tab.result.rows.length > 0 && (
+                        <Select onValueChange={(format) => exportResults(tab.id, format)}>
+                          <SelectTrigger className="w-32 h-9 border-green-300 hover:bg-green-50">
+                            <SelectValue placeholder="Export" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="csv">
+                              <div className="flex items-center gap-2">
+                                <Download className="h-4 w-4" />
+                                CSV
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="json">
+                              <div className="flex items-center gap-2">
+                                <Download className="h-4 w-4" />
+                                JSON
+                              </div>
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                      <Button
+                        onClick={() => executeQuery(tab.id)}
+                        disabled={tab.isExecuting || !selectedDatabase || !tab.query.trim()}
+                        className="h-9 bg-gradient-to-r from-emerald-500 to-green-600 text-white border-0 hover:from-emerald-600 hover:to-green-700"
+                      >
+                        <Play className="h-4 w-4 mr-1" />
+                        {tab.isExecuting ? 'Executing...' : 'Execute'}
+                      </Button>
+                    </div>
                   </div>
                 </div>
 
                 <div className={`grid ${tab.result ? 'grid-rows-2' : 'grid-rows-1'} gap-4 ${isFullscreen ? 'h-[calc(100vh-200px)]' : 'h-96'}`}>
-                  <div className="overflow-hidden">
-                    <SQLEditor
-                      value={tab.query}
-                      onChange={(query) => updateTabQuery(tab.id, query)}
-                      database={selectedDatabase}
-                      height={isFullscreen ? '40vh' : '200px'}
-                    />
+                  <div className="overflow-hidden flex gap-4">
+                    <div className={`${showColumns ? 'flex-1' : 'w-full'}`}>
+                      <SQLEditor
+                        value={tab.query}
+                        onChange={(query) => updateTabQuery(tab.id, query)}
+                        database={selectedDatabase}
+                        height={isFullscreen ? '40vh' : '200px'}
+                      />
+                    </div>
+                    
+                    {showColumns && (
+                      <div className="w-72 overflow-hidden">
+                        <div className="h-full p-4 bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl overflow-y-auto">
+                          <h3 className="font-bold text-green-900 mb-3 flex items-center gap-2 sticky top-0 bg-green-50 pb-2">
+                            <Database className="w-5 h-5" />
+                            Available Tables & Columns
+                          </h3>
+                          
+                          {loadingColumns ? (
+                            <div className="text-center py-8">
+                              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500 mx-auto mb-2"></div>
+                              <p className="text-xs text-gray-500">Loading...</p>
+                            </div>
+                          ) : Object.keys(availableColumns).length > 0 ? (
+                            <div className="space-y-3">
+                              {Object.keys(availableColumns).map((tableName) => (
+                                <div key={tableName} className="border border-green-200 rounded-lg overflow-hidden bg-white">
+                                  <div 
+                                    className="px-3 py-2 bg-green-100 font-semibold text-sm text-green-900 cursor-pointer hover:bg-green-200 transition flex items-center gap-2"
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(tableName);
+                                      toast({ title: '✅ Copied!', description: `"${tableName}" copied`, duration: 2000 });
+                                    }}
+                                  >
+                                    <Database className="w-4 h-4" />
+                                    {tableName}
+                                  </div>
+                                  <div className="max-h-48 overflow-y-auto">
+                                    {availableColumns[tableName].map((col, idx) => (
+                                      <div
+                                        key={idx}
+                                        className="px-3 py-2 hover:bg-green-50 cursor-pointer border-t border-green-100 group"
+                                        onClick={() => {
+                                          navigator.clipboard.writeText(col.name);
+                                          toast({ title: '✅ Copied!', description: `"${col.name}" copied`, duration: 2000 });
+                                        }}
+                                        title="Click to copy column name"
+                                      >
+                                        <div className="flex items-center justify-between">
+                                          <span className="text-sm font-medium text-gray-900">{col.name}</span>
+                                          <Copy className="w-3 h-3 text-green-600 opacity-0 group-hover:opacity-100 transition" />
+                                        </div>
+                                        <span className="text-xs text-gray-500">{col.type}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="text-center py-8">
+                              <Database className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                              <p className="text-xs text-gray-500">
+                                {selectedDatabase ? 'No tables available' : 'Select a database'}
+                              </p>
+                            </div>
+                          )}
+                          
+                          {Object.keys(availableColumns).length > 0 && (
+                            <div className="mt-3 p-3 bg-green-100 border border-green-300 rounded-lg sticky bottom-0">
+                              <p className="text-xs text-green-800">
+                                💡 <strong>Tip:</strong> Click any table or column to copy its name
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {tab.result && (
                     <div className="overflow-hidden">
-                      <Card className="h-full">
-                        <CardHeader className="pb-2">
-                          <CardTitle className="text-sm">Results</CardTitle>
+                      <Card className="h-full border-2">
+                        <CardHeader className="pb-3 bg-gradient-to-r from-blue-50 to-indigo-50">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className={`p-2 rounded-lg ${
+                                tab.result.status === 'success' 
+                                  ? 'bg-gradient-to-br from-green-500 to-emerald-600' 
+                                  : 'bg-gradient-to-br from-red-500 to-rose-600'
+                              }`}>
+                                {tab.result.status === 'success' ? (
+                                  <CheckCircle className="h-5 w-5 text-white" />
+                                ) : (
+                                  <XCircle className="h-5 w-5 text-white" />
+                                )}
+                              </div>
+                              <div>
+                                <CardTitle className="text-base font-bold">
+                                  {tab.result.status === 'success' ? 'Query Results' : 'Query Error'}
+                                </CardTitle>
+                                {tab.result.status === 'success' && (
+                                  <div className="flex items-center gap-3 text-sm text-gray-600 mt-1">
+                                    <span className="flex items-center gap-1">
+                                      <div className="w-2 h-2 bg-blue-500 rounded-full" />
+                                      {tab.result.rowCount} rows
+                                    </span>
+                                    <span className="flex items-center gap-1">
+                                      <div className="w-2 h-2 bg-green-500 rounded-full" />
+                                      {tab.result.columns.length} columns
+                                    </span>
+                                    <span className="flex items-center gap-1">
+                                      <div className="w-2 h-2 bg-purple-500 rounded-full" />
+                                      {tab.result.executionTime}s
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
                         </CardHeader>
-                        <CardContent className="h-[calc(100%-60px)] overflow-auto">
+                        <CardContent className="h-[calc(100%-80px)] overflow-auto p-0">
                           {tab.result.status === 'error' ? (
-                            <div className="text-red-600 p-4 bg-red-50 rounded">
-                              <p className="font-medium">Query Error:</p>
-                              <p className="text-sm mt-1">{tab.result.error}</p>
+                            <div className="p-4 bg-gradient-to-br from-red-50 to-rose-50">
+                              <div className="flex items-start gap-3">
+                                <div className="p-2 bg-red-500 rounded-full">
+                                  <XCircle className="h-5 w-5 text-white" />
+                                </div>
+                                <div className="flex-1">
+                                  <p className="font-bold text-red-900">Query Execution Failed</p>
+                                  <div className="mt-2 p-3 bg-white border-2 border-red-200 rounded-lg">
+                                    <p className="text-sm text-red-800 font-mono">{tab.result.error}</p>
+                                  </div>
+                                </div>
+                              </div>
                             </div>
                           ) : (
-                            <div className="overflow-x-auto">
-                              <table className="w-full border-collapse text-sm">
-                                <thead>
-                                  <tr className="border-b">
-                                    {tab.result.columns.map((col) => (
-                                      <th key={col} className="text-left p-2 font-medium">
-                                        {col}
-                                      </th>
-                                    ))}
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {tab.result.rows.slice(0, 100).map((row, index) => (
-                                    <tr key={index} className="border-b hover:bg-muted/50">
-                                      {Array.isArray(row) ? (
-                                        row.map((cell, cellIndex) => (
-                                          <td key={cellIndex} className="p-2">
-                                            {cell?.toString() || 'NULL'}
-                                          </td>
-                                        ))
-                                      ) : (
-                                        tab.result!.columns.map((col, cellIndex) => (
-                                          <td key={cellIndex} className="p-2">
-                                            {(row as any)[col]?.toString() || 'NULL'}
-                                          </td>
-                                        ))
-                                      )}
+                            <div style={{ width: '100%', maxWidth: '100%', overflow: 'hidden' }}>
+                              <div style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: '700px', width: '100%' }}>
+                                <table style={{ 
+                                  borderCollapse: 'collapse',
+                                  display: 'table',
+                                  tableLayout: 'auto'
+                                }} className="text-sm">
+                                  <thead className="sticky top-0 bg-gradient-to-r from-blue-100 to-indigo-100 z-10">
+                                    <tr>
+                                      {tab.result.columns.map((col) => (
+                                        <th 
+                                          key={col} 
+                                          className="text-left p-3 font-bold text-gray-800 border-b-2 border-blue-300 whitespace-nowrap"
+                                          style={{ minWidth: '120px' }}
+                                          title={col}
+                                        >
+                                          <div className="flex items-center gap-2">
+                                            <Database className="h-4 w-4 text-blue-600" />
+                                            {col}
+                                          </div>
+                                        </th>
+                                      ))}
                                     </tr>
-                                  ))}
-                                </tbody>
-                              </table>
-                              {tab.result.rowCount > 100 && (
-                                <div className="text-center p-4 text-muted-foreground">
-                                  Showing first 100 of {tab.result.rowCount} rows
-                                </div>
-                              )}
+                                  </thead>
+                                  <tbody>
+                                    {tab.result.rows.slice(0, 100).map((row, index) => (
+                                      <tr key={index} className={`border-b ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-blue-50 transition-colors`}>
+                                        {Array.isArray(row) ? (
+                                          row.map((cell, cellIndex) => (
+                                            <td 
+                                              key={cellIndex} 
+                                              className="p-3 font-medium whitespace-nowrap"
+                                              style={{ 
+                                                minWidth: '120px',
+                                                maxWidth: '300px',
+                                                overflow: 'hidden',
+                                                textOverflow: 'ellipsis'
+                                              }}
+                                              title={cell === null || cell === undefined ? 'NULL' : cell.toString()}
+                                            >
+                                              {cell === null || cell === undefined ? (
+                                                <span className="text-gray-400 italic">NULL</span>
+                                              ) : (
+                                                cell.toString()
+                                              )}
+                                            </td>
+                                          ))
+                                        ) : (
+                                          tab.result!.columns.map((col, cellIndex) => (
+                                            <td 
+                                              key={cellIndex} 
+                                              className="p-3 font-medium whitespace-nowrap"
+                                              style={{ 
+                                                minWidth: '120px',
+                                                maxWidth: '300px',
+                                                overflow: 'hidden',
+                                                textOverflow: 'ellipsis'
+                                              }}
+                                              title={(row as any)[col] === null || (row as any)[col] === undefined ? 'NULL' : (row as any)[col].toString()}
+                                            >
+                                              {(row as any)[col] === null || (row as any)[col] === undefined ? (
+                                                <span className="text-gray-400 italic">NULL</span>
+                                              ) : (
+                                                (row as any)[col].toString()
+                                              )}
+                                            </td>
+                                          ))
+                                        )}
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          )}
+                          {tab.result && tab.result.status !== 'error' && tab.result.rowCount > 100 && (
+                            <div className="text-center p-4 bg-gradient-to-r from-amber-50 to-orange-50 border-t-2 border-amber-200">
+                              <p className="text-sm font-semibold text-amber-800">
+                                Showing first 100 of {tab.result.rowCount} rows • Scroll horizontally to see all columns
+                              </p>
                             </div>
                           )}
                         </CardContent>
@@ -538,27 +789,38 @@ const MultiTabSQLEditor: React.FC<MultiTabSQLEditorProps> = ({
                   </TabsList>
                   
                   <TabsContent value="saved" className="mt-4">
-                    <Card>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-sm">Saved Queries</CardTitle>
+                    <Card className="border-2 border-amber-200">
+                      <CardHeader className="pb-3 bg-gradient-to-r from-amber-50 to-orange-50 border-b-2 border-amber-200">
+                        <div className="flex items-center gap-2">
+                          <div className="p-2 bg-gradient-to-br from-amber-500 to-orange-600 rounded-lg">
+                            <Save className="h-4 w-4 text-white" />
+                          </div>
+                          <CardTitle className="text-sm font-bold">Saved Queries</CardTitle>
+                        </div>
                       </CardHeader>
-                      <CardContent className="space-y-2 max-h-96 overflow-y-auto">
+                      <CardContent className="space-y-2 max-h-96 overflow-y-auto pt-3">
                         {savedQueries.length === 0 ? (
-                          <p className="text-sm text-muted-foreground text-center py-4">
-                            No saved queries yet
-                          </p>
+                          <div className="text-center py-8">
+                            <BookOpen className="h-12 w-12 text-amber-300 mx-auto mb-2" />
+                            <p className="text-sm text-amber-600 font-medium">No saved queries yet</p>
+                            <p className="text-xs text-amber-500 mt-1">Save queries to access them later</p>
+                          </div>
                         ) : (
                           savedQueries.map((query) => (
                             <div 
                               key={query.id} 
-                              className="p-2 border rounded hover:bg-muted/50 cursor-pointer transition-colors"
+                              className="p-3 border-2 border-amber-200 rounded-lg hover:border-amber-400 hover:bg-amber-50 cursor-pointer transition-all"
                               onClick={() => loadSavedQuery(query)}
                             >
-                              <div className="font-medium text-sm truncate">{query.name}</div>
-                              <div className="text-xs text-muted-foreground truncate mt-1">
+                              <div className="flex items-center gap-2 font-medium text-sm text-amber-900">
+                                <Save className="h-4 w-4 text-amber-600" />
+                                <span className="truncate">{query.name}</span>
+                              </div>
+                              <div className="text-xs text-gray-600 truncate mt-2 p-2 bg-amber-50 rounded font-mono border border-amber-200">
                                 {query.query}
                               </div>
-                              <div className="text-xs text-muted-foreground mt-1">
+                              <div className="text-xs text-amber-600 mt-2 flex items-center gap-1">
+                                <div className="w-1.5 h-1.5 bg-amber-500 rounded-full" />
                                 {new Date(query.createdAt).toLocaleDateString()}
                               </div>
                             </div>
@@ -569,45 +831,62 @@ const MultiTabSQLEditor: React.FC<MultiTabSQLEditorProps> = ({
                   </TabsContent>
                   
                   <TabsContent value="history" className="mt-4">
-                    <Card>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-sm">Query History</CardTitle>
+                    <Card className="border-2 border-purple-200">
+                      <CardHeader className="pb-3 bg-gradient-to-r from-purple-50 to-indigo-50 border-b-2 border-purple-200">
+                        <div className="flex items-center gap-2">
+                          <div className="p-2 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-lg">
+                            <History className="h-4 w-4 text-white" />
+                          </div>
+                          <CardTitle className="text-sm font-bold">Query History</CardTitle>
+                        </div>
                       </CardHeader>
-                      <CardContent className="space-y-2 max-h-96 overflow-y-auto">
+                      <CardContent className="space-y-2 max-h-96 overflow-y-auto pt-3">
                         {queryHistory.length === 0 ? (
-                          <p className="text-sm text-muted-foreground text-center py-4">
-                            No query history yet
-                          </p>
+                          <div className="text-center py-8">
+                            <History className="h-12 w-12 text-purple-300 mx-auto mb-2" />
+                            <p className="text-sm text-purple-600 font-medium">No query history yet</p>
+                            <p className="text-xs text-purple-500 mt-1">Execute queries to see history</p>
+                          </div>
                         ) : (
                           queryHistory.slice(0, 20).map((item) => (
                             <div 
                               key={item.id} 
-                              className="p-2 border rounded hover:bg-muted/50 cursor-pointer transition-colors"
+                              className={`p-3 border-2 rounded-lg cursor-pointer transition-all ${
+                                item.status === 'success' 
+                                  ? 'border-green-200 hover:border-green-400 hover:bg-green-50' 
+                                  : 'border-red-200 hover:border-red-400 hover:bg-red-50'
+                              }`}
                               onClick={() => loadHistoryQuery(item)}
                             >
-                              <div className="flex items-center gap-2 mb-1">
-                                {item.status === 'success' ? (
-                                  <CheckCircle className="h-3 w-3 text-green-500" />
-                                ) : (
-                                  <XCircle className="h-3 w-3 text-red-500" />
-                                )}
-                                <span className="text-xs text-muted-foreground">
+                              <div className="flex items-center gap-2 mb-2">
+                                <div className={`p-1 rounded-full ${
+                                  item.status === 'success' ? 'bg-green-500' : 'bg-red-500'
+                                }`}>
+                                  {item.status === 'success' ? (
+                                    <CheckCircle className="h-3 w-3 text-white" />
+                                  ) : (
+                                    <XCircle className="h-3 w-3 text-white" />
+                                  )}
+                                </div>
+                                <span className="text-xs font-semibold text-gray-700">
                                   {new Date(item.timestamp).toLocaleTimeString()}
                                 </span>
-                                <span className="text-xs text-muted-foreground">
-                                  {item.executionTime}s
+                                <span className="text-xs text-gray-600">
+                                  • {item.executionTime}s
                                 </span>
                               </div>
-                              <div className="text-xs font-mono truncate">
+                              <div className="text-xs font-mono text-gray-700 truncate p-2 bg-gray-100 rounded border">
                                 {item.query}
                               </div>
                               {item.status === 'success' && item.rowCount !== undefined && (
-                                <div className="text-xs text-muted-foreground mt-1">
+                                <div className="text-xs text-green-700 mt-2 flex items-center gap-1 font-medium">
+                                  <div className="w-1.5 h-1.5 bg-green-500 rounded-full" />
                                   {item.rowCount} rows returned
                                 </div>
                               )}
                               {item.status === 'error' && item.error && (
-                                <div className="text-xs text-red-500 mt-1 truncate">
+                                <div className="text-xs text-red-700 mt-2 flex items-center gap-1 font-medium">
+                                  <div className="w-1.5 h-1.5 bg-red-500 rounded-full" />
                                   {item.error}
                                 </div>
                               )}

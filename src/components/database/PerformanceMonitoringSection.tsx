@@ -18,7 +18,9 @@ import {
   Database,
   Zap,
   AlertTriangle,
-  CheckCircle
+  CheckCircle,
+  Gauge,
+  Sparkles
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -91,19 +93,28 @@ const PerformanceMonitoringSection: React.FC<PerformanceMonitoringSectionProps> 
 
   const fetchServerStats = async () => {
     try {
-      // Mock server stats
-      const mockStats: ServerStats = {
-        uptime: '15 days, 8 hours, 23 minutes',
-        connections: 47,
-        maxConnections: 151,
-        queries: 2847392,
-        slowQueries: 23,
-        threads: 12,
-        memoryUsage: 68,
-        diskUsage: 45,
-        cpuUsage: 23
-      };
-      setServerStats(mockStats);
+      const resp = await fetch('/api/database/server-stats', {
+        credentials: 'include',
+        cache: 'no-store'
+      });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const data = await resp.json();
+      if (data.status === 'success') {
+        const stats: ServerStats = {
+          uptime: data.uptime || 'n/a',
+          connections: data.connections || 0,
+          maxConnections: data.maxConnections || 0,
+          queries: data.queries || 0,
+          slowQueries: data.slowQueries || 0,
+          threads: data.threads || 0,
+          memoryUsage: data.memoryUsage || 0,
+          diskUsage: data.diskUsage || 0,
+          cpuUsage: data.cpuUsage || 0
+        };
+        setServerStats(stats);
+      } else {
+        throw new Error(data.message || 'Failed to fetch server statistics');
+      }
     } catch (error) {
       toast({
         title: 'Error',
@@ -116,50 +127,33 @@ const PerformanceMonitoringSection: React.FC<PerformanceMonitoringSectionProps> 
   const fetchProcesses = async () => {
     setLoading(true);
     try {
-      // Mock process data
-      const mockProcesses: ProcessInfo[] = [
-        {
-          id: 1234,
-          user: 'dataviz_user',
-          host: '192.168.1.100:54321',
-          database: 'dataviz_main',
-          command: 'Query',
-          time: 2,
-          state: 'Sending data',
-          info: 'SELECT * FROM dashboards WHERE user_id = 123 ORDER BY created_at DESC'
-        },
-        {
-          id: 1235,
-          user: 'admin',
-          host: 'localhost:3306',
-          database: 'analytics_db',
-          command: 'Sleep',
-          time: 45,
-          state: '',
-          info: ''
-        },
-        {
-          id: 1236,
-          user: 'readonly_user',
-          host: '10.0.0.50:45678',
-          database: 'dataviz_main',
-          command: 'Query',
-          time: 0,
-          state: 'executing',
-          info: 'SELECT COUNT(*) FROM users WHERE created_at > "2024-01-01"'
-        }
-      ];
-      
-      setTimeout(() => {
-        setProcesses(mockProcesses);
-        setLoading(false);
-      }, 500);
+      const resp = await fetch('/api/database/processes', {
+        credentials: 'include',
+        cache: 'no-store'
+      });
+      const data = await resp.json();
+      if (resp.ok && data.status === 'success' && Array.isArray(data.processes)) {
+        const mapped: ProcessInfo[] = data.processes.map((p: any) => ({
+          id: p.id,
+          user: p.user,
+          host: p.host,
+          database: p.database,
+          command: p.command,
+          time: p.time,
+          state: p.state,
+          info: p.info
+        }));
+        setProcesses(mapped);
+      } else {
+        setProcesses([]);
+      }
     } catch (error) {
       toast({
         title: 'Error',
         description: 'Failed to fetch process list',
         variant: 'destructive'
       });
+    } finally {
       setLoading(false);
     }
   };
@@ -280,40 +274,92 @@ const PerformanceMonitoringSection: React.FC<PerformanceMonitoringSectionProps> 
 
   return (
     <div className="space-y-6">
-      {/* Control Panel */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <span>Performance Monitoring</span>
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-2">
-                <Label htmlFor="refresh-interval" className="text-sm">Auto-refresh:</Label>
-                <Select value={refreshInterval.toString()} onValueChange={(value) => setRefreshInterval(parseInt(value))}>
-                  <SelectTrigger className="w-20">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="5">5s</SelectItem>
-                    <SelectItem value="10">10s</SelectItem>
-                    <SelectItem value="30">30s</SelectItem>
-                    <SelectItem value="60">1m</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button
-                  variant={autoRefresh ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setAutoRefresh(!autoRefresh)}
-                >
-                  {autoRefresh ? 'Stop' : 'Start'}
-                </Button>
-              </div>
-              <Button onClick={() => { fetchServerStats(); fetchProcesses(); }} variant="outline" size="sm">
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Refresh
+      {/* Beautiful Header Section */}
+      <Card className="border-2 border-pink-200 shadow-xl overflow-hidden">
+        {/* Gradient Header */}
+        <div className="bg-gradient-to-br from-pink-400 via-rose-400 to-pink-500 p-6">
+          <div className="flex items-center gap-4">
+            {/* Icon Container */}
+            <div className="p-4 bg-white/20 backdrop-blur-sm rounded-2xl shadow-lg">
+              <Gauge className="h-10 w-10 text-white" />
+            </div>
+            
+            {/* Title & Description */}
+            <div className="flex-1">
+              <h2 className="text-3xl font-bold text-white mb-1 flex items-center gap-3">
+                Performance Monitoring
+                <Sparkles className="h-6 w-6 text-pink-200 animate-pulse" />
+              </h2>
+              <p className="text-white/90 text-sm flex items-center gap-2">
+                <Activity className="h-4 w-4" />
+                Real-time insights into your database performance metrics
+              </p>
+            </div>
+
+            {/* Connection Status Badge */}
+            <div className="hidden md:flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-sm rounded-lg border border-white/30">
+              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+              <span className="text-white text-sm font-medium">Monitoring</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Control Panel Section */}
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            {/* Auto-refresh Controls */}
+            <div className="flex items-center gap-4">
+              <Label htmlFor="refresh-interval" className="text-base font-semibold text-gray-700 flex items-center gap-2">
+                <Clock className="h-5 w-5 text-pink-600" />
+                Auto-refresh:
+              </Label>
+              <Select value={refreshInterval.toString()} onValueChange={(value) => setRefreshInterval(parseInt(value))}>
+                <SelectTrigger className="w-24 h-10 border-2 border-pink-200 focus:border-pink-500">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="5">5 sec</SelectItem>
+                  <SelectItem value="10">10 sec</SelectItem>
+                  <SelectItem value="30">30 sec</SelectItem>
+                  <SelectItem value="60">1 min</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button
+                onClick={() => setAutoRefresh(!autoRefresh)}
+                className={`h-10 px-6 ${autoRefresh 
+                  ? 'bg-gradient-to-r from-pink-400 to-rose-400 hover:from-pink-500 hover:to-rose-500 text-white' 
+                  : 'border-2 border-pink-400 text-pink-600 hover:bg-pink-50'
+                } shadow-lg transition-all duration-300`}
+              >
+                {autoRefresh ? 'Stop' : 'Start'}
               </Button>
             </div>
-          </CardTitle>
-        </CardHeader>
+
+            {/* Manual Refresh Button */}
+            <Button 
+              onClick={() => { fetchServerStats(); fetchProcesses(); fetchSlowQueries(); }} 
+              className="h-10 px-6 bg-gradient-to-r from-pink-400 to-rose-400 hover:from-pink-500 hover:to-rose-500 text-white shadow-lg hover:shadow-xl transition-all duration-300"
+            >
+              <RefreshCw className="h-5 w-5 mr-2" />
+              Refresh Now
+            </Button>
+          </div>
+
+          {/* Info Message */}
+          {autoRefresh && (
+            <div className="mt-4 p-3 bg-pink-50 border border-pink-200 rounded-lg flex items-start gap-3">
+              <Activity className="h-5 w-5 text-pink-600 mt-0.5 animate-pulse" />
+              <div>
+                <p className="text-sm font-medium text-pink-900">
+                  Auto-refresh is <span className="font-bold">ON</span> (Every {refreshInterval} seconds)
+                </p>
+                <p className="text-xs text-pink-700 mt-1">
+                  Performance metrics will update automatically
+                </p>
+              </div>
+            </div>
+          )}
+        </CardContent>
       </Card>
 
       {/* Server Statistics */}

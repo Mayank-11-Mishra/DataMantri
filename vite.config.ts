@@ -7,27 +7,35 @@ import { componentTagger } from "lovable-tagger";
 export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
-    port: 8080,
+    port: 8082,
     proxy: {
       '/api': {
-        target: 'http://localhost:8091',
-        changeOrigin: true,
+        target: 'http://localhost:5001',
+        changeOrigin: false,
         secure: false,
+        cookieDomainRewrite: 'localhost',
+        cookiePathRewrite: '/',
       },
       '/login': {
-        target: 'http://127.0.0.1:8091',
-        changeOrigin: true,
+        target: 'http://localhost:5001',
+        changeOrigin: false,
         secure: false,
+        cookieDomainRewrite: 'localhost',
+        cookiePathRewrite: '/',
       },
       '/logout': {
-        target: 'http://127.0.0.1:8091',
-        changeOrigin: true,
+        target: 'http://localhost:5001',
+        changeOrigin: false,
         secure: false,
+        cookieDomainRewrite: 'localhost',
+        cookiePathRewrite: '/',
       },
       '/register': {
-        target: 'http://127.0.0.1:8091',
-        changeOrigin: true,
+        target: 'http://localhost:5001',
+        changeOrigin: false,
         secure: false,
+        cookieDomainRewrite: 'localhost',
+        cookiePathRewrite: '/',
       }
     }
   },

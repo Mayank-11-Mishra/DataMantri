@@ -27,12 +27,16 @@ const SQLEditor: React.FC<SQLEditorProps> = ({
 }) => {
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const [schema, setSchema] = useState<DatabaseSchema | null>(null);
+  const schemaRef = useRef<DatabaseSchema | null>(null); // Add ref to avoid closure issues
 
   // Fetch database schema for autocomplete
   useEffect(() => {
-    console.log('SQLEditor: Database prop changed:', database);
+    console.log('🔍 SQLEditor: Database prop changed:', database);
     if (database) {
+      console.log('🔍 SQLEditor: Starting schema fetch for:', database);
       fetchDatabaseSchema();
+    } else {
+      console.warn('⚠️ SQLEditor: No database selected');
     }
   }, [database]);
 
@@ -40,43 +44,23 @@ const SQLEditor: React.FC<SQLEditorProps> = ({
     try {
       console.log('SQLEditor: Fetching schema for database:', database);
       
-      let response;
-      
-      // Use different API endpoints based on database type
+      let response: Response | undefined;
+      // Prefer name-based wrappers to avoid ID lookups
       if (database === 'DataMantri Primary Database') {
-        // Use primary database schema API
-        response = await fetch('/api/database/primary/schema', {
-          credentials: 'include'
-        });
+        response = await fetch('/api/database/primary/schema', { credentials: 'include' });
+      } else if (database === 'Datamart') {
+        response = await fetch('/api/database/Datamart/schema', { credentials: 'include' });
       } else {
-        // Find the data source ID for external databases
-        const dataSourcesResponse = await fetch('/api/data-sources', { 
-          credentials: 'include' 
-        });
-        
-        if (dataSourcesResponse.ok) {
-          const dataSources = await dataSourcesResponse.json();
-          const selectedSource = dataSources.find((source: any) => source.name === database);
-          
-          if (selectedSource) {
-            response = await fetch(`/api/data-sources/${selectedSource.id}/schema`, {
-              credentials: 'include'
-            });
-          } else {
-            console.error('SQLEditor: Database not found in data sources');
-            return;
-          }
-        } else {
-          console.error('SQLEditor: Failed to fetch data sources');
-          return;
-        }
+        const encoded = encodeURIComponent(database);
+        response = await fetch(`/api/database/${encoded}/schema`, { credentials: 'include' });
       }
       
-      console.log('SQLEditor: Schema response status:', response?.status);
+      console.log('✅ SQLEditor: Schema response status:', response?.status);
       
       if (response && response.ok) {
         const result = await response.json();
-        console.log('SQLEditor: Schema result:', result);
+        console.log('📊 SQLEditor: Schema result:', result);
+        console.log('📊 SQLEditor: Schema has', Object.keys(result.schema || {}).length, 'tables');
         
         if (result.status === 'success') {
           if (database === 'DataMantri Primary Database') {
@@ -96,15 +80,39 @@ const SQLEditor: React.FC<SQLEditorProps> = ({
               schema: schemaData
             });
           } else {
-            // External data sources return schema object
+            // External data sources return schema object with nested columns
+            const schemaData: Record<string, any[]> = {};
+            Object.keys(result.schema).forEach(tableName => {
+              const tableData = result.schema[tableName];
+              // Handle both array format and object with 'columns' property
+              if (Array.isArray(tableData)) {
+                schemaData[tableName] = tableData;
+              } else if (tableData.columns && Array.isArray(tableData.columns)) {
+                schemaData[tableName] = tableData.columns.map((col: any) => ({
+                  column_name: col.name,
+                  data_type: col.type,
+                  is_nullable: col.nullable ? 'YES' : 'NO',
+                  column_default: col.default
+                }));
+              }
+            });
+            
             setSchema({
               tables: Object.keys(result.schema),
-              schema: result.schema
+              schema: schemaData
             });
           }
           const tableCount = database === 'DataMantri Primary Database' ? result.tables.length : Object.keys(result.schema).length;
-          console.log('SQLEditor: Schema set successfully, tables:', tableCount);
-          console.log('SQLEditor: Table names:', database === 'DataMantri Primary Database' ? result.tables.map((t: any) => t.name) : Object.keys(result.schema));
+          console.log('✅ SQLEditor: Schema set successfully!');
+          console.log('📊 SQLEditor: Total tables:', tableCount);
+          console.log('📋 SQLEditor: Table names:', database === 'DataMantri Primary Database' ? result.tables.map((t: any) => t.name) : Object.keys(result.schema));
+          
+          // Update ref immediately so completion provider can access it
+          schemaRef.current = database === 'DataMantri Primary Database' 
+            ? { tables: result.tables.map((t: any) => t.name), schema: schemaData }
+            : { tables: Object.keys(result.schema), schema: schemaData };
+          
+          console.log('🎯 SQLEditor: Auto-complete should now work! Press Ctrl+Space or start typing.');
         } else {
           console.error('SQLEditor: Schema fetch failed:', result.message);
         }
@@ -124,8 +132,11 @@ const SQLEditor: React.FC<SQLEditorProps> = ({
       triggerCharacters: [' ', '.', '\n'],
       provideCompletionItems: (model, position) => {
         const suggestions: monaco.languages.CompletionItem[] = [];
+        
+        // Use ref to get latest schema (avoids closure issue)
+        const currentSchema = schemaRef.current;
 
-        if (!schema) {
+        if (!currentSchema) {
           console.log('SQLEditor: No schema available for autocomplete');
           // Still provide basic SQL keywords even without schema
           const basicKeywords = ['SELECT', 'FROM', 'WHERE', 'JOIN', 'INSERT', 'UPDATE', 'DELETE'];
@@ -145,8 +156,8 @@ const SQLEditor: React.FC<SQLEditorProps> = ({
           return { suggestions };
         }
         
-        console.log('SQLEditor: Providing completions, schema has', schema.tables.length, 'tables');
-        console.log('SQLEditor: Available tables:', schema.tables);
+        console.log('✨ SQLEditor: Providing completions, schema has', currentSchema.tables.length, 'tables');
+        console.log('✨ SQLEditor: Available tables:', currentSchema.tables);
 
         const word = model.getWordUntilPosition(position);
         const range = {
@@ -195,10 +206,8 @@ const SQLEditor: React.FC<SQLEditorProps> = ({
 
         // Always add table suggestions (with context-aware priority)
         const tablePriority = (isAfterFrom || isAfterJoin) ? '0_' : '3_';
-        console.log('SQLEditor: Adding table suggestions with priority:', tablePriority);
         
-        schema.tables.forEach(tableName => {
-          console.log('SQLEditor: Adding table suggestion:', tableName);
+        currentSchema.tables.forEach(tableName => {
           suggestions.push({
             label: tableName,
             kind: monaco.languages.CompletionItemKind.Class,
@@ -209,11 +218,9 @@ const SQLEditor: React.FC<SQLEditorProps> = ({
             sortText: `${tablePriority}${tableName}`
           });
         });
-        
-        console.log('SQLEditor: Total table suggestions added:', schema.tables.length);
 
         // Context-aware column suggestions
-        Object.entries(schema.schema).forEach(([tableName, columns]) => {
+        Object.entries(currentSchema.schema).forEach(([tableName, columns]) => {
           columns.forEach(column => {
             // High priority for columns in SELECT clause
             if (isAfterSelect || isInSelectClause) {
@@ -351,8 +358,7 @@ const SQLEditor: React.FC<SQLEditorProps> = ({
           });
         }
 
-        console.log('SQLEditor: Final suggestions count:', suggestions.length);
-        console.log('SQLEditor: Sample suggestions:', suggestions.slice(0, 5).map(s => s.label));
+        console.log('✅ SQLEditor: Returning', suggestions.length, 'suggestions');
         
         return { suggestions };
       }

@@ -19,7 +19,9 @@ import {
   Link,
   Eye,
   Settings,
-  Maximize
+  Maximize,
+  Sparkles,
+  Share2
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -56,6 +58,7 @@ const VisualToolsSection: React.FC<VisualToolsSectionProps> = ({ connectionStatu
   const [loading, setLoading] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(100);
   const [showTableDetails, setShowTableDetails] = useState(true);
+  const [search, setSearch] = useState('');
   const [selectedTable, setSelectedTable] = useState<string>('');
 
   useEffect(() => {
@@ -80,9 +83,12 @@ const VisualToolsSection: React.FC<VisualToolsSectionProps> = ({ connectionStatu
       if (response.ok) {
         const dataSources = await response.json();
         const databaseNames = Array.isArray(dataSources) 
-          ? dataSources.map((ds: any) => ds.name)
-          : [];
+          ? ['Datamart', ...dataSources.map((ds: any) => ds.name)]
+          : ['Datamart'];
         setDatabases(databaseNames);
+        if (!selectedDatabase && databaseNames.length > 0) {
+          setSelectedDatabase(databaseNames[0]);
+        }
       } else {
         throw new Error('Failed to fetch data sources');
       }
@@ -98,92 +104,52 @@ const VisualToolsSection: React.FC<VisualToolsSectionProps> = ({ connectionStatu
 
   const fetchDatabaseSchema = async () => {
     if (!selectedDatabase) return;
-    
     setLoading(true);
     try {
-      // Mock schema data with positions for ER diagram
-      const mockSchemas: TableSchema[] = [
-        {
-          name: 'users',
-          columns: [
-            { name: 'id', type: 'int', isPrimary: true, isForeign: false, nullable: false },
-            { name: 'name', type: 'varchar(255)', isPrimary: false, isForeign: false, nullable: false },
-            { name: 'email', type: 'varchar(255)', isPrimary: false, isForeign: false, nullable: false },
-            { name: 'created_at', type: 'timestamp', isPrimary: false, isForeign: false, nullable: false },
-            { name: 'updated_at', type: 'timestamp', isPrimary: false, isForeign: false, nullable: true }
-          ],
-          position: { x: 50, y: 50 }
-        },
-        {
-          name: 'dashboards',
-          columns: [
-            { name: 'id', type: 'int', isPrimary: true, isForeign: false, nullable: false },
-            { name: 'name', type: 'varchar(255)', isPrimary: false, isForeign: false, nullable: false },
-            { name: 'user_id', type: 'int', isPrimary: false, isForeign: true, nullable: false },
-            { name: 'data_source_id', type: 'int', isPrimary: false, isForeign: true, nullable: true },
-            { name: 'created_at', type: 'timestamp', isPrimary: false, isForeign: false, nullable: false }
-          ],
-          position: { x: 350, y: 50 }
-        },
-        {
-          name: 'data_sources',
-          columns: [
-            { name: 'id', type: 'int', isPrimary: true, isForeign: false, nullable: false },
-            { name: 'name', type: 'varchar(255)', isPrimary: false, isForeign: false, nullable: false },
-            { name: 'type', type: 'varchar(50)', isPrimary: false, isForeign: false, nullable: false },
-            { name: 'config', type: 'json', isPrimary: false, isForeign: false, nullable: true },
-            { name: 'created_at', type: 'timestamp', isPrimary: false, isForeign: false, nullable: false }
-          ],
-          position: { x: 650, y: 50 }
-        },
-        {
-          name: 'upload_history',
-          columns: [
-            { name: 'id', type: 'int', isPrimary: true, isForeign: false, nullable: false },
-            { name: 'user_id', type: 'int', isPrimary: false, isForeign: true, nullable: false },
-            { name: 'filename', type: 'varchar(255)', isPrimary: false, isForeign: false, nullable: false },
-            { name: 'file_size', type: 'bigint', isPrimary: false, isForeign: false, nullable: false },
-            { name: 'uploaded_at', type: 'timestamp', isPrimary: false, isForeign: false, nullable: false }
-          ],
-          position: { x: 50, y: 300 }
-        }
-      ];
+      const dbName = encodeURIComponent(selectedDatabase);
+      const schemaResp = await fetch(`/api/database/${dbName}/schema`, { credentials: 'include', cache: 'no-store' });
+      const relResp = await fetch(`/api/database/${dbName}/relationships`, { credentials: 'include', cache: 'no-store' });
+      const schemaJson = await schemaResp.json();
+      const relJson = await relResp.json();
 
-      const mockRelations: TableRelation[] = [
-        {
-          fromTable: 'dashboards',
-          fromColumn: 'user_id',
-          toTable: 'users',
-          toColumn: 'id',
+      if (schemaResp.ok && schemaJson.status === 'success') {
+        // Map schema into TableSchema[] with simple positioning grid
+        const tables: string[] = Array.isArray(schemaJson.tables) ? schemaJson.tables : Object.keys(schemaJson.schema || {});
+        const tableSchemasNew: TableSchema[] = tables.map((t, idx) => {
+          const cols = (schemaJson.schema?.[t] || []).map((c: any) => ({
+            name: c.column_name || c.name,
+            type: c.data_type || c.type || 'text',
+            isPrimary: false,
+            isForeign: false,
+            nullable: (c.is_nullable ?? 'YES') === 'YES'
+          }));
+          return {
+            name: t,
+            columns: cols,
+            position: { x: 50 + (idx % 3) * 300, y: 50 + Math.floor(idx / 3) * 250 }
+          } as TableSchema;
+        });
+        setTableSchemas(tableSchemasNew);
+      } else {
+        throw new Error(schemaJson.message || 'Schema fetch failed');
+      }
+
+      if (relResp.ok && relJson.status === 'success' && Array.isArray(relJson.relationships)) {
+        const rels: TableRelation[] = relJson.relationships.map((r: any) => ({
+          fromTable: r.table_name || r.fromTable,
+          fromColumn: r.column_name || r.fromColumn,
+          toTable: r.foreign_table_name || r.toTable,
+          toColumn: r.foreign_column_name || r.toColumn,
           type: 'many-to-one'
-        },
-        {
-          fromTable: 'dashboards',
-          fromColumn: 'data_source_id',
-          toTable: 'data_sources',
-          toColumn: 'id',
-          type: 'many-to-one'
-        },
-        {
-          fromTable: 'upload_history',
-          fromColumn: 'user_id',
-          toTable: 'users',
-          toColumn: 'id',
-          type: 'many-to-one'
-        }
-      ];
-      
-      setTimeout(() => {
-        setTableSchemas(mockSchemas);
-        setRelations(mockRelations);
-        setLoading(false);
-      }, 1000);
+        }));
+        setRelations(rels);
+      } else {
+        setRelations([]);
+      }
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to fetch database schema',
-        variant: 'destructive'
-      });
+      console.error('VisualToolsSection schema load error:', error);
+      toast({ title: 'Error', description: 'Failed to fetch database schema', variant: 'destructive' });
+    } finally {
       setLoading(false);
     }
   };
@@ -269,69 +235,168 @@ ${relations.map(rel =>
 
   return (
     <div className="space-y-6">
-      {/* Database Selection and Controls */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Visual Database Tools</CardTitle>
-          <CardDescription>Generate ER diagrams and visualize database relationships</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div>
-                <Label htmlFor="database-select">Database</Label>
+      {/* Beautiful Header Section */}
+      <Card className="border-2 border-cyan-200 shadow-xl overflow-hidden">
+        {/* Gradient Header */}
+        <div className="bg-gradient-to-br from-cyan-400 via-teal-400 to-emerald-400 p-6">
+          <div className="flex items-center gap-4">
+            {/* Icon Container */}
+            <div className="p-4 bg-white/20 backdrop-blur-sm rounded-2xl shadow-lg">
+              <Network className="h-10 w-10 text-white" />
+            </div>
+            
+            {/* Title & Description */}
+            <div className="flex-1">
+              <h2 className="text-3xl font-bold text-white mb-1 flex items-center gap-3">
+                Visual Database Tools
+                <Sparkles className="h-6 w-6 text-cyan-200 animate-pulse" />
+              </h2>
+              <p className="text-white/90 text-sm flex items-center gap-2">
+                <Share2 className="h-4 w-4" />
+                Generate ER diagrams and visualize database relationships
+              </p>
+            </div>
+
+            {/* Connection Status Badge */}
+            <div className="hidden md:flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-sm rounded-lg border border-white/30">
+              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+              <span className="text-white text-sm font-medium">Ready</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Controls Section */}
+        <CardContent className="p-6">
+          <div className="space-y-4">
+            {/* Database Selection and Search Row */}
+            <div className="flex items-end gap-4 flex-wrap">
+              {/* Database Selector */}
+              <div className="flex-1 min-w-[200px]">
+                <Label htmlFor="database-select" className="text-base font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                  <Database className="h-5 w-5 text-cyan-600" />
+                  Select Database
+                </Label>
                 <Select value={selectedDatabase} onValueChange={setSelectedDatabase}>
-                  <SelectTrigger className="w-48">
-                    <SelectValue placeholder="Select database" />
+                  <SelectTrigger className="h-12 border-2 border-cyan-200 focus:border-cyan-500 focus:ring-cyan-500 text-base">
+                    <SelectValue placeholder="Choose a database..." />
                   </SelectTrigger>
                   <SelectContent>
                     {databases.map((db) => (
                       <SelectItem key={db} value={db}>
-                        <div className="flex items-center gap-2">
-                          <Database className="h-4 w-4" />
-                          {db}
+                        <div className="flex items-center gap-3 py-1">
+                          <div className="p-2 bg-cyan-100 rounded-lg">
+                            <Database className="h-4 w-4 text-cyan-600" />
+                          </div>
+                          <span className="font-medium">{db}</span>
                         </div>
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
-              
+
+              {/* Search Input */}
+              <div className="flex-1 min-w-[300px]">
+                <Label htmlFor="search" className="text-base font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                  <Table className="h-5 w-5 text-cyan-600" />
+                  Search
+                </Label>
+                <Input
+                  id="search"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Filter tables, columns, relationships..."
+                  className="h-12 border-2 border-cyan-200 focus:border-cyan-500 text-base"
+                />
+              </div>
+
+              {/* Refresh Button */}
               {selectedDatabase && (
-                <Button onClick={fetchDatabaseSchema} variant="outline" size="sm">
-                  <RefreshCw className="h-4 w-4 mr-2" />
+                <Button 
+                  onClick={fetchDatabaseSchema}
+                  className="h-12 px-6 bg-gradient-to-r from-cyan-400 to-teal-400 hover:from-cyan-500 hover:to-teal-500 text-white shadow-lg hover:shadow-xl transition-all duration-300"
+                >
+                  <RefreshCw className="h-5 w-5 mr-2" />
                   Refresh
                 </Button>
               )}
             </div>
 
+            {/* Zoom and View Controls */}
             {selectedDatabase && (
-              <div className="flex items-center gap-2">
-                <Button onClick={() => handleZoom('out')} variant="outline" size="sm">
-                  <ZoomOut className="h-4 w-4" />
-                </Button>
-                <span className="text-sm font-medium">{zoomLevel}%</span>
-                <Button onClick={() => handleZoom('in')} variant="outline" size="sm">
-                  <ZoomIn className="h-4 w-4" />
-                </Button>
-                <Button onClick={() => setShowTableDetails(!showTableDetails)} variant="outline" size="sm">
-                  <Eye className="h-4 w-4 mr-2" />
-                  {showTableDetails ? 'Hide' : 'Show'} Details
-                </Button>
-                <Select onValueChange={(format) => exportDiagram(format)}>
-                  <SelectTrigger className="w-32">
-                    <SelectValue placeholder="Export" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="png">PNG</SelectItem>
-                    <SelectItem value="svg">SVG</SelectItem>
-                    <SelectItem value="pdf">PDF</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button onClick={generateSQL} variant="outline" size="sm">
-                  <Download className="h-4 w-4 mr-2" />
-                  SQL
-                </Button>
+              <div className="flex items-center justify-between gap-4 p-4 bg-cyan-50 border border-cyan-200 rounded-lg flex-wrap">
+                {/* Zoom Controls */}
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                    <ZoomIn className="h-4 w-4 text-cyan-600" />
+                    Zoom:
+                  </span>
+                  <Button 
+                    onClick={() => handleZoom('out')} 
+                    variant="outline" 
+                    size="sm"
+                    className="border-cyan-300 hover:bg-cyan-100"
+                  >
+                    <ZoomOut className="h-4 w-4" />
+                  </Button>
+                  <span className="text-base font-bold text-cyan-700 min-w-[60px] text-center">{zoomLevel}%</span>
+                  <Button 
+                    onClick={() => handleZoom('in')} 
+                    variant="outline" 
+                    size="sm"
+                    className="border-cyan-300 hover:bg-cyan-100"
+                  >
+                    <ZoomIn className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                {/* View & Export Controls */}
+                <div className="flex items-center gap-2">
+                  <Button 
+                    onClick={() => setShowTableDetails(!showTableDetails)} 
+                    className={`${showTableDetails 
+                      ? 'bg-gradient-to-r from-cyan-400 to-teal-400 text-white' 
+                      : 'border-2 border-cyan-400 text-cyan-600 hover:bg-cyan-50'
+                    } transition-all duration-300`}
+                    size="sm"
+                  >
+                    <Eye className="h-4 w-4 mr-2" />
+                    {showTableDetails ? 'Hide' : 'Show'} Details
+                  </Button>
+                  <Select onValueChange={(format) => exportDiagram(format)}>
+                    <SelectTrigger className="w-32 h-9 border-2 border-cyan-400 text-cyan-600">
+                      <SelectValue placeholder="Export" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="png">PNG</SelectItem>
+                      <SelectItem value="svg">SVG</SelectItem>
+                      <SelectItem value="pdf">PDF</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button 
+                    onClick={generateSQL}
+                    className="bg-gradient-to-r from-cyan-400 to-teal-400 hover:from-cyan-500 hover:to-teal-500 text-white shadow-lg transition-all duration-300"
+                    size="sm"
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    SQL
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Info Message */}
+            {selectedDatabase && (
+              <div className="p-3 bg-cyan-50 border border-cyan-200 rounded-lg flex items-start gap-3">
+                <Network className="h-5 w-5 text-cyan-600 mt-0.5" />
+                <div>
+                  <p className="text-sm font-medium text-cyan-900">
+                    Visualizing: <span className="font-bold">{selectedDatabase}</span>
+                  </p>
+                  <p className="text-xs text-cyan-700 mt-1">
+                    Drag tables to rearrange • Zoom to explore • Export for sharing
+                  </p>
+                </div>
               </div>
             )}
           </div>
@@ -380,10 +445,46 @@ ${relations.map(rel =>
                       </defs>
                       
                       {/* Relationship lines */}
-                      {relations.map(relation => getRelationshipLine(relation))}
+                      {relations
+                        .filter(rel => {
+                          if (!search.trim()) return true;
+                          const q = search.toLowerCase();
+                          return (
+                            rel.fromTable.toLowerCase().includes(q) ||
+                            rel.toTable.toLowerCase().includes(q) ||
+                            rel.fromColumn.toLowerCase().includes(q) ||
+                            rel.toColumn.toLowerCase().includes(q)
+                          );
+                        })
+                        .filter(rel => {
+                          // also hide relations for filtered-out tables
+                          const visibleNames = new Set(
+                            tableSchemas
+                              .filter(t => {
+                                if (!search.trim()) return true;
+                                const q = search.toLowerCase();
+                                return (
+                                  t.name.toLowerCase().includes(q) ||
+                                  t.columns.some(c => c.name.toLowerCase().includes(q))
+                                );
+                              })
+                              .map(t => t.name)
+                          );
+                          return visibleNames.has(rel.fromTable) && visibleNames.has(rel.toTable);
+                        })
+                        .map(relation => getRelationshipLine(relation))}
                       
                       {/* Tables */}
-                      {tableSchemas.map((table) => (
+                      {tableSchemas
+                        .filter(t => {
+                          if (!search.trim()) return true;
+                          const q = search.toLowerCase();
+                          return (
+                            t.name.toLowerCase().includes(q) ||
+                            t.columns.some(c => c.name.toLowerCase().includes(q))
+                          );
+                        })
+                        .map((table) => (
                         <g key={table.name}>
                           <rect
                             x={table.position.x}
@@ -446,7 +547,16 @@ ${relations.map(rel =>
           
           <TabsContent value="table-list">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {tableSchemas.map((table) => (
+              {tableSchemas
+                .filter(t => {
+                  if (!search.trim()) return true;
+                  const q = search.toLowerCase();
+                  return (
+                    t.name.toLowerCase().includes(q) ||
+                    t.columns.some(c => c.name.toLowerCase().includes(q))
+                  );
+                })
+                .map((table) => (
                 <Card key={table.name} className="hover:shadow-md transition-shadow">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -459,7 +569,13 @@ ${relations.map(rel =>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-2">
-                      {table.columns.map((column) => (
+                      {table.columns
+                        .filter(col => {
+                          if (!search.trim()) return true;
+                          const q = search.toLowerCase();
+                          return col.name.toLowerCase().includes(q);
+                        })
+                        .map((column) => (
                         <div key={column.name} className="flex items-center justify-between text-sm">
                           <div className="flex items-center gap-2">
                             <span className={column.isPrimary ? 'font-bold text-red-600' : column.isForeign ? 'text-blue-600' : ''}>
@@ -486,7 +602,18 @@ ${relations.map(rel =>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {relations.map((relation, index) => (
+                  {relations
+                    .filter(rel => {
+                      if (!search.trim()) return true;
+                      const q = search.toLowerCase();
+                      return (
+                        rel.fromTable.toLowerCase().includes(q) ||
+                        rel.toTable.toLowerCase().includes(q) ||
+                        rel.fromColumn.toLowerCase().includes(q) ||
+                        rel.toColumn.toLowerCase().includes(q)
+                      );
+                    })
+                    .map((relation, index) => (
                     <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
                       <div className="flex items-center gap-4">
                         <div className="flex items-center gap-2">
