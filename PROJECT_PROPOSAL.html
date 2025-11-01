@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Suite Analytics Platform & Dashboard Development Services - Project Proposal</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 30px;
+            border-bottom: 3px solid #2563eb;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            color: #1e40af;
+            margin-bottom: 10px;
+        }
+        
+        .header h2 {
+            font-size: 1.5em;
+            color: #64748b;
+            font-weight: 400;
+        }
+        
+        .part-divider {
+            background: linear-gradient(to right, #2563eb, #3b82f6);
+            color: white;
+            padding: 20px;
+            margin: 50px -40px 30px -40px;
+            text-align: center;
+            font-size: 1.8em;
+            font-weight: bold;
+        }
+        
+        h3 {
+            color: #1e40af;
+            font-size: 1.8em;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        
+        h4 {
+            color: #0f172a;
+            font-size: 1.3em;
+            margin-top: 25px;
+            margin-bottom: 12px;
+        }
+        
+        h5 {
+            color: #334155;
+            font-size: 1.1em;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+        
+        p {
+            margin-bottom: 15px;
+            text-align: justify;
+        }
+        
+        ul, ol {
+            margin-left: 30px;
+            margin-bottom: 20px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 25px 0;
+        }
+        
+        .feature-card {
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #3b82f6;
+        }
+        
+        .feature-card h5 {
+            color: #2563eb;
+            margin-top: 0;
+        }
+        
+        .benefit-item {
+            background: #ecfdf5;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 6px;
+            border-left: 4px solid #10b981;
+        }
+        
+        .benefit-item strong {
+            color: #059669;
+        }
+        
+        .phase-box {
+            background: #eff6ff;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 8px;
+            border-left: 4px solid #3b82f6;
+        }
+        
+        .phase-box h5 {
+            color: #1e40af;
+            margin-top: 0;
+        }
+        
+        .deliverable-section {
+            background: #fef3c7;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 8px;
+            border-left: 4px solid #f59e0b;
+        }
+        
+        .highlight-box {
+            background: #dbeafe;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border: 2px solid #3b82f6;
+        }
+        
+        .independence-box {
+            background: #fef2f2;
+            padding: 25px;
+            margin: 30px 0;
+            border-radius: 8px;
+            border: 2px dashed #ef4444;
+        }
+        
+        .synergy-box {
+            background: #f0fdf4;
+            padding: 25px;
+            margin: 30px 0;
+            border-radius: 8px;
+            border: 2px solid #22c55e;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        th {
+            background: #f1f5f9;
+            color: #0f172a;
+            font-weight: 600;
+        }
+        
+        .footer {
+            margin-top: 50px;
+            padding-top: 30px;
+            border-top: 2px solid #e2e8f0;
+            text-align: center;
+            color: #64748b;
+        }
+        
+        .checkmark {
+            color: #10b981;
+            font-weight: bold;
+        }
+        
+        .metric {
+            display: inline-block;
+            background: #f1f5f9;
+            padding: 8px 15px;
+            border-radius: 20px;
+            margin: 5px;
+            font-weight: 600;
+            color: #334155;
+        }
+        
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            
+            .container {
+                box-shadow: none;
+                padding: 20px;
+            }
+            
+            .part-divider {
+                page-break-before: always;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 1.8em;
+            }
+            
+            .part-divider {
+                margin: 30px -20px 20px -20px;
+                font-size: 1.3em;
+            }
+            
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 PROJECT PROPOSAL</h1>
+            <h2>Data Suite Analytics Platform & Dashboard Development Services</h2>
+        </div>
+
+        <div class="part-divider">
+            PART 1: Data Suite Platform Implementation
+        </div>
+
+        <h3>Executive Summary</h3>
+        <p>
+            <strong>Data Suite</strong> is a comprehensive, enterprise-grade Business Intelligence and Analytics Platform designed to empower organizations with real-time data insights, automated dashboard generation, and advanced data management capabilities. This proposal outlines the implementation of Data Suite as the core analytics solution for your organization.
+        </p>
+
+        <h3>1.1 Product Overview</h3>
+        <p><strong>Data Suite</strong> is an all-in-one data analytics platform that provides:</p>
+
+        <div class="feature-grid">
+            <div class="feature-card">
+                <h5>AI-Powered Dashboard Builder</h5>
+                <ul>
+                    <li>Natural language dashboard generation</li>
+                    <li>Automated chart recommendations</li>
+                    <li>Intelligent data visualization</li>
+                </ul>
+            </div>
+
+            <div class="feature-card">
+                <h5>Visual Dashboard Builder</h5>
+                <ul>
+                    <li>Drag-and-drop interface</li>
+                    <li>15+ chart types</li>
+                    <li>Real-time data refresh</li>
+                    <li>Interactive filters and drill-downs</li>
+                </ul>
+            </div>
+
+            <div class="feature-card">
+                <h5>SQL Query Editor</h5>
+                <ul>
+                    <li>Advanced SQL editor with syntax highlighting</li>
+                    <li>Query history and saved queries</li>
+                    <li>Real-time query execution</li>
+                    <li>Export capabilities (CSV, Excel, JSON)</li>
+                </ul>
+            </div>
+
+            <div class="feature-card">
+                <h5>Data Management Suite</h5>
+                <ul>
+                    <li>Multi-source data integration</li>
+                    <li>Data mart creation and management</li>
+                    <li>Automated ETL pipelines</li>
+                    <li>Real-time data synchronization</li>
+                </ul>
+            </div>
+
+            <div class="feature-card">
+                <h5>Performance Monitoring</h5>
+                <ul>
+                    <li>Real-time database performance metrics</li>
+                    <li>Query optimization recommendations</li>
+                    <li>Access logs and audit trails</li>
+                    <li>Pipeline execution tracking</li>
+                </ul>
+            </div>
+
+            <div class="feature-card">
+                <h5>Access Management</h5>
+                <ul>
+                    <li>Role-based access control</li>
+                    <li>User management and permissions</li>
+                    <li>Dashboard sharing capabilities</li>
+                    <li>Audit logging</li>
+                </ul>
+            </div>
+
+            <div class="feature-card">
+                <h5>Mobile Application</h5>
+                <ul>
+                    <li>Responsive mobile interface</li>
+                    <li>Dashboard viewing on-the-go</li>
+                    <li>AI-powered chatbot for data insights</li>
+                    <li>Offline mode support</li>
+                </ul>
+            </div>
+        </div>
+
+        <h3>1.2 Key Features & Benefits</h3>
+
+        <h4>For Business Users</h4>
+        <div class="benefit-item">
+            <strong>Self-Service Analytics</strong> - Create dashboards without technical knowledge
+        </div>
+        <div class="benefit-item">
+            <strong>AI-Powered Insights</strong> - Natural language queries for instant insights
+        </div>
+        <div class="benefit-item">
+            <strong>Real-Time Data</strong> - Live dashboards with auto-refresh
+        </div>
+        <div class="benefit-item">
+            <strong>Mobile Access</strong> - View dashboards anywhere, anytime
+        </div>
+
+        <h4>For Data Analysts</h4>
+        <div class="benefit-item">
+            <strong>SQL Query Editor</strong> - Write and execute complex queries
+        </div>
+        <div class="benefit-item">
+            <strong>Data Exploration</strong> - ER diagrams and schema explorer
+        </div>
+        <div class="benefit-item">
+            <strong>Performance Optimization</strong> - Query recommendations and monitoring
+        </div>
+        <div class="benefit-item">
+            <strong>ETL Pipelines</strong> - Automated data transformations
+        </div>
+
+        <h4>For IT Administrators</h4>
+        <div class="benefit-item">
+            <strong>Multi-Source Integration</strong> - Connect multiple databases
+        </div>
+        <div class="benefit-item">
+            <strong>Access Control</strong> - Granular permission management
+        </div>
+        <div class="benefit-item">
+            <strong>Audit Trails</strong> - Complete activity logging
+        </div>
+        <div class="benefit-item">
+            <strong>Performance Monitoring</strong> - Database health and query tracking
+        </div>
+
+        <h3>1.3 Implementation Scope</h3>
+
+        <div class="phase-box">
+            <h5>Phase 1: Core Platform Setup (Weeks 1-2)</h5>
+            <ul>
+                <li><span class="checkmark">✅</span> Data Suite platform deployment</li>
+                <li><span class="checkmark">✅</span> Database setup and configuration</li>
+                <li><span class="checkmark">✅</span> User authentication and access management</li>
+                <li><span class="checkmark">✅</span> Multi-source data integration</li>
+            </ul>
+        </div>
+
+        <div class="phase-box">
+            <h5>Phase 2: Dashboard Builder Enablement (Weeks 3-4)</h5>
+            <ul>
+                <li><span class="checkmark">✅</span> AI Dashboard Builder configuration</li>
+                <li><span class="checkmark">✅</span> Visual Dashboard Builder training</li>
+                <li><span class="checkmark">✅</span> SQL Query Editor setup</li>
+                <li><span class="checkmark">✅</span> Chart library customization</li>
+            </ul>
+        </div>
+
+        <div class="phase-box">
+            <h5>Phase 3: Data Management & Integration (Weeks 5-6)</h5>
+            <ul>
+                <li><span class="checkmark">✅</span> Data source connections</li>
+                <li><span class="checkmark">✅</span> Data mart creation</li>
+                <li><span class="checkmark">✅</span> ETL pipeline setup</li>
+                <li><span class="checkmark">✅</span> Performance monitoring configuration</li>
+            </ul>
+        </div>
+
+        <div class="phase-box">
+            <h5>Phase 4: Mobile App & Training (Weeks 7-8)</h5>
+            <ul>
+                <li><span class="checkmark">✅</span> Mobile application deployment</li>
+                <li><span class="checkmark">✅</span> User training and documentation</li>
+                <li><span class="checkmark">✅</span> Knowledge transfer sessions</li>
+                <li><span class="checkmark">✅</span> Go-live support</li>
+            </ul>
+        </div>
+
+        <h3>1.4 Deliverables</h3>
+
+        <div class="deliverable-section">
+            <h5>1. Deployed Data Suite Platform</h5>
+            <ul>
+                <li>Web application</li>
+                <li>Mobile application (iOS, Android, Web)</li>
+                <li>Database setup and configuration</li>
+                <li>Complete source code and documentation</li>
+            </ul>
+        </div>
+
+        <div class="deliverable-section">
+            <h5>2. Integration Components</h5>
+            <ul>
+                <li>Data source connectors</li>
+                <li>ETL pipeline templates</li>
+                <li>API documentation</li>
+                <li>Integration guides</li>
+            </ul>
+        </div>
+
+        <div class="deliverable-section">
+            <h5>3. Documentation</h5>
+            <ul>
+                <li>User manuals (Admin, Analyst, Viewer)</li>
+                <li>System documentation</li>
+                <li>API reference guide</li>
+                <li>Troubleshooting guide</li>
+            </ul>
+        </div>
+
+        <div class="deliverable-section">
+            <h5>4. Training Materials</h5>
+            <ul>
+                <li>Video tutorials</li>
+                <li>Quick start guides</li>
+                <li>Best practices documentation</li>
+                <li>FAQ and troubleshooting</li>
+            </ul>
+        </div>
+
+        <!-- PART 2 -->
+        <div class="part-divider">
+            PART 2: Dashboard Development Services
+        </div>
+
+        <h3>Executive Summary</h3>
+        <p>
+            As a complementary service to the Data Suite platform implementation, we offer a <strong>Dashboard Development Service</strong> where our expert team will design, develop, and deliver <strong>6 custom dashboards per month</strong> tailored to your specific business requirements.
+        </p>
+
+        <h3>2.1 Service Overview</h3>
+        
+        <div class="highlight-box">
+            <h4>Monthly Dashboard Delivery</h4>
+            <ul>
+                <li><strong>Quantity:</strong> 6 dashboards per month</li>
+                <li><strong>Duration:</strong> Ongoing monthly engagement</li>
+                <li><strong>Customization:</strong> 100% tailored to your requirements</li>
+                <li><strong>Data Sources:</strong> Integration with your existing data sources</li>
+            </ul>
+        </div>
+
+        <h4>What's Included Per Dashboard</h4>
+        <ol>
+            <li><strong>Requirements Gathering</strong> - Business requirement analysis, data source identification, KPI definition</li>
+            <li><strong>Dashboard Design</strong> - UI/UX design mockups, chart selection, branding, interactive elements</li>
+            <li><strong>Development</strong> - Data queries, chart configuration, filter implementation, drill-down capabilities</li>
+            <li><strong>Testing & Optimization</strong> - Performance testing, data validation, compatibility checks</li>
+            <li><strong>Deployment & Training</strong> - Dashboard deployment, user access, training, documentation</li>
+        </ol>
+
+        <h3>2.2 Delivery Process</h3>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Week</th>
+                    <th>Activities</th>
+                    <th>Dashboards</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Week 1</strong></td>
+                    <td>Requirements & Planning</td>
+                    <td>2 dashboards - requirement gathering, design mockups, client approval</td>
+                </tr>
+                <tr>
+                    <td><strong>Week 2</strong></td>
+                    <td>Development</td>
+                    <td>2 dashboards - development, data integration, testing, internal review</td>
+                </tr>
+                <tr>
+                    <td><strong>Week 3</strong></td>
+                    <td>Requirements & Development</td>
+                    <td>2 dashboards - requirement gathering + 2 dashboards development</td>
+                </tr>
+                <tr>
+                    <td><strong>Week 4</strong></td>
+                    <td>Delivery & Next Planning</td>
+                    <td>6 dashboards - final delivery, user training, documentation, next month planning</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h4>Communication</h4>
+        <ul>
+            <li><strong>Weekly Status Updates:</strong> Email reports on progress</li>
+            <li><strong>Bi-weekly Review Meetings:</strong> Video calls for review and feedback</li>
+            <li><strong>Dedicated Support:</strong> Email/chat support during business hours</li>
+            <li><strong>Monthly Review:</strong> End-of-month review and planning session</li>
+        </ul>
+
+        <h3>2.3 Dashboard Specifications</h3>
+
+        <h4>Standard Dashboard Includes:</h4>
+        <ul>
+            <li><span class="checkmark">✅</span> Up to 10 charts/visualizations per dashboard</li>
+            <li><span class="checkmark">✅</span> Interactive filters (up to 5 per dashboard)</li>
+            <li><span class="checkmark">✅</span> Drill-down capabilities</li>
+            <li><span class="checkmark">✅</span> Real-time data refresh</li>
+            <li><span class="checkmark">✅</span> Export functionality (PDF, Excel, CSV)</li>
+            <li><span class="checkmark">✅</span> Mobile-responsive design</li>
+            <li><span class="checkmark">✅</span> Role-based access control</li>
+            <li><span class="checkmark">✅</span> Scheduled email reports (optional)</li>
+        </ul>
+
+        <h3>2.4 Quality Assurance</h3>
+
+        <h4>Our Commitment</h4>
+        <div class="metric">Data Accuracy: 100%</div>
+        <div class="metric">Load Time: &lt; 3 seconds</div>
+        <div class="metric">Uptime: 99.9%</div>
+        <div class="metric">Support Response: &lt; 4 hours</div>
+
+        <h4>Review Process</h4>
+        <ul>
+            <li><strong>Internal QA:</strong> Comprehensive testing before delivery</li>
+            <li><strong>Client Review:</strong> 2 rounds of revisions per dashboard</li>
+            <li><strong>Acceptance:</strong> Sign-off required before final delivery</li>
+            <li><strong>Post-Delivery Support:</strong> 30 days support per dashboard</li>
+        </ul>
+
+        <h3>2.5 Dashboard Selection & Finalization</h3>
+
+        <h4>Monthly Planning Process</h4>
+        <p>At the beginning of each month, the client will:</p>
+        <ol>
+            <li><strong>Identify Business Needs:</strong> Review operational requirements and data needs</li>
+            <li><strong>Prioritize Dashboards:</strong> Select 6 dashboards from the backlog or propose new ones</li>
+            <li><strong>Define Requirements:</strong> Specify metrics, KPIs, and data sources for each dashboard</li>
+            <li><strong>Approve Specifications:</strong> Review and approve design mockups and requirements</li>
+        </ol>
+
+        <h4>Dashboard Categories</h4>
+        <p>Dashboards can be selected from various business areas:</p>
+        <ul>
+            <li><strong>Operational Dashboards:</strong> Daily activities, ticket management, task tracking</li>
+            <li><strong>Strategic Dashboards:</strong> Executive summaries, performance indicators, trend analysis</li>
+            <li><strong>Departmental Dashboards:</strong> Sales, inventory, HR, finance, customer service</li>
+            <li><strong>Analytical Dashboards:</strong> Deep-dive analytics, comparative analysis, forecasting</li>
+            <li><strong>Custom Requirements:</strong> Any specific business intelligence needs</li>
+        </ul>
+
+        <h4>Flexibility</h4>
+        <ul>
+            <li>Client has complete control over dashboard selection</li>
+            <li>Requirements can be adjusted based on changing business priorities</li>
+            <li>New dashboard types can be introduced based on emerging needs</li>
+            <li>Focus areas can shift month-to-month based on business cycles</li>
+        </ul>
+
+        <h3>2.6 Success Metrics</h3>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Metric</th>
+                    <th>Target</th>
+                    <th>Measure</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Dashboard Adoption</strong></td>
+                    <td>80% user adoption within 2 months</td>
+                    <td>Active users per dashboard</td>
+                </tr>
+                <tr>
+                    <td><strong>User Satisfaction</strong></td>
+                    <td>4.5/5 average rating</td>
+                    <td>Monthly user surveys</td>
+                </tr>
+                <tr>
+                    <td><strong>Business Impact</strong></td>
+                    <td>20% reduction in manual reporting time</td>
+                    <td>Time saved vs. previous process</td>
+                </tr>
+                <tr>
+                    <td><strong>Data-Driven Decisions</strong></td>
+                    <td>50% increase in data-driven decisions</td>
+                    <td>Dashboard usage and action items</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- Independence Section -->
+        <div class="part-divider">
+            IMPLEMENTATION INDEPENDENCE
+        </div>
+
+        <div class="independence-box">
+            <h3>Separate Implementations</h3>
+            <p><strong>Part 1 (Data Suite Platform)</strong> and <strong>Part 2 (Dashboard Services)</strong> are completely independent:</p>
+            
+            <h4>1. Standalone Options</h4>
+            <ul>
+                <li><span class="checkmark">✅</span> You can implement Data Suite platform only</li>
+                <li><span class="checkmark">✅</span> You can subscribe to dashboard services only</li>
+                <li><span class="checkmark">✅</span> You can implement both together</li>
+            </ul>
+
+            <h4>2. No Dependencies</h4>
+            <ul>
+                <li>Dashboard service does NOT require Data Suite platform</li>
+                <li>Data Suite platform works independently</li>
+                <li>Each can be started/stopped without affecting the other</li>
+            </ul>
+
+            <h4>3. Flexible Engagement</h4>
+            <ul>
+                <li>Choose one or both services</li>
+                <li>Different timelines and budgets</li>
+                <li>Separate contracts and agreements</li>
+            </ul>
+        </div>
+
+        <div class="synergy-box">
+            <h3>COMBINED BENEFITS (If Both Selected)</h3>
+            
+            <h4>Synergies</h4>
+            <ol>
+                <li><strong>Seamless Integration:</strong> Dashboards deployed directly on Data Suite</li>
+                <li><strong>Self-Service:</strong> After 6 months, your team can create their own dashboards</li>
+                <li><strong>Learning Curve:</strong> Team learns by example from delivered dashboards</li>
+                <li><strong>Best Practices:</strong> Delivered dashboards follow Data Suite best practices</li>
+                <li><strong>Enhanced Value:</strong> Additional benefits when both services are combined</li>
+            </ol>
+        </div>
+
+        <!-- Next Steps -->
+        <div class="part-divider">
+            NEXT STEPS
+        </div>
+
+        <h3>To Proceed</h3>
+        <ol>
+            <li><strong>Schedule Discovery Call:</strong> Discuss requirements and objectives</li>
+            <li><strong>Review Proposal:</strong> Clarify any questions or concerns</li>
+            <li><strong>Sign Agreement:</strong> Finalize scope, timeline, and pricing</li>
+            <li><strong>Kick-off Meeting:</strong> Initiate project and align teams</li>
+        </ol>
+
+        <h3>Contact Information</h3>
+        <div class="highlight-box">
+            <p><strong>Project Manager:</strong> [Name]</p>
+            <p><strong>Email:</strong> [Email]</p>
+            <p><strong>Phone:</strong> [Phone]</p>
+        </div>
+
+        <!-- Appendix -->
+        <h3>APPENDIX</h3>
+
+        <h4>A. Implementation Timeline</h4>
+        <ul>
+            <li><strong>Data Suite Platform:</strong> 8 weeks</li>
+            <li><strong>Dashboard Services:</strong> Ongoing monthly engagement</li>
+        </ul>
+
+        <h4>B. References & Case Studies</h4>
+        <ul>
+            <li>Available upon request</li>
+            <li>Success stories from similar implementations</li>
+            <li>Demo access to Data Suite platform</li>
+        </ul>
+
+        <h4>C. Support & Maintenance</h4>
+        <ul>
+            <li>Dedicated support team</li>
+            <li>Regular platform updates</li>
+            <li>Knowledge base and documentation</li>
+            <li>Training and onboarding assistance</li>
+        </ul>
+
+        <div class="footer">
+            <hr style="margin: 30px 0; border: none; border-top: 1px solid #e2e8f0;">
+            <p><strong>Prepared By:</strong> Automatrix-Innovation Pvt. Ltd.</p>
+            <p><strong>Date:</strong> [Current Date]</p>
+            <p><strong>Valid Until:</strong> [Date + 30 days]</p>
+            <p style="margin-top: 20px; font-size: 0.9em; font-style: italic;">
+                This proposal is confidential and intended solely for the use of the individual or entity to whom it is addressed.
+            </p>
+        </div>
+    </div>
+</body>
+</html>
+
+
+
+
+
+
+
+
