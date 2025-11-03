@@ -65,7 +65,7 @@ class DatabaseConfig:
     def _get_postgresql_url(self):
         """Generate PostgreSQL connection URL"""
         password_encoded = quote_plus(self.password)
-        url = f"postgresql://{self.username}:{password_encoded}@{self.host}:{self.port}/{self.database}"
+        url = f"postgresql://mayank:datamantri@localhost:5432/datamantri"
         
         # Add SSL parameters if configured
         params = []
