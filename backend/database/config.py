@@ -65,7 +65,7 @@ class DatabaseConfig:
     def _get_postgresql_url(self):
         """Generate PostgreSQL connection URL"""
         password_encoded = quote_plus(self.password)
-        url = f"postgresql://postgres:postgres@localhost:5432/dataviz
+        url = f"postgresql://postgres:postgres@localhost:5432/Data
         
         # Add SSL parameters if configured
         params = []
